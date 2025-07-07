@@ -1,0 +1,1 @@
+g++ getPosition.cpp -o getPosition.exe

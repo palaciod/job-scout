@@ -1,0 +1,1 @@
+g++ moveMouse.cpp -o moveMouse.exe

@@ -1,0 +1,1 @@
+g++ escape.cpp -o escape.exe
