@@ -2,31 +2,22 @@
 #include <iostream>
 
 int main() {
-    // Declare the process as DPI-aware
     SetProcessDPIAware();
-
-    // Get correct physical screen dimensions
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-    // Get device contexts
     HDC hScreenDC = GetDC(NULL);
     HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
-
-    // Create a bitmap
     HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, screenWidth, screenHeight);
     SelectObject(hMemoryDC, hBitmap);
 
-    // Copy screen to bitmap
     BitBlt(hMemoryDC, 0, 0, screenWidth, screenHeight, hScreenDC, 0, 0, SRCCOPY);
 
-    // Save bitmap to file
     BITMAPFILEHEADER bmfHeader;
     BITMAPINFOHEADER bi;
 
     bi.biSize = sizeof(BITMAPINFOHEADER);
     bi.biWidth = screenWidth;
-    bi.biHeight = -screenHeight;  // Negative to ensure top-down bitmap
+    bi.biHeight = -screenHeight;
     bi.biPlanes = 1;
     bi.biBitCount = 24;
     bi.biCompression = BI_RGB;
@@ -55,8 +46,6 @@ int main() {
     WriteFile(hFile, (LPSTR)&bmfHeader, sizeof(BITMAPFILEHEADER), &dwBytesWritten, NULL);
     WriteFile(hFile, (LPSTR)&bi, sizeof(BITMAPINFOHEADER), &dwBytesWritten, NULL);
     WriteFile(hFile, (LPSTR)lpbitmap, dwBmpSize, &dwBytesWritten, NULL);
-
-    // Cleanup
     GlobalUnlock(hDIB);
     GlobalFree(hDIB);
     CloseHandle(hFile);

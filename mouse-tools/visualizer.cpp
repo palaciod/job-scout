@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Default logic for detecting multiple job listings
     cv::Mat result;
     cv::matchTemplate(screenshot, templateImg, result, cv::TM_CCOEFF_NORMED);
 
