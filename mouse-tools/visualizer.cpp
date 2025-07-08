@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <string>
 
-// Reusable helper for single-point detection and JSON output
 void detectAndPrint(const cv::Mat& screenshot, const cv::Mat& targetTemplate) {
     cv::Mat result;
     cv::matchTemplate(screenshot, targetTemplate, result, cv::TM_CCOEFF_NORMED);
@@ -16,9 +15,15 @@ void detectAndPrint(const cv::Mat& screenshot, const cv::Mat& targetTemplate) {
 
     double threshold = 0.8;
     if (maxVal >= threshold) {
-        int centerX = maxLoc.x + targetTemplate.cols / 2;
-        int centerY = maxLoc.y + targetTemplate.rows / 2;
-        std::cout << "{ \"x\": " << centerX << ", \"y\": " << centerY << " }" << std::endl;
+        int xStart = maxLoc.x;
+        int yStart = maxLoc.y;
+        int centerX = xStart + targetTemplate.cols / 2;
+        int centerY = yStart + targetTemplate.rows / 2;
+        std::cout << "{ \"x\": " << centerX
+                  << ", \"y\": " << centerY
+                  << ", \"xStart\": " << xStart
+                  << ", \"yStart\": " << yStart
+                  << " }" << std::endl;
     } else {
         std::cout << "{}" << std::endl;
     }
@@ -27,22 +32,23 @@ void detectAndPrint(const cv::Mat& screenshot, const cv::Mat& targetTemplate) {
 int main(int argc, char* argv[]) {
     SetProcessDPIAware();
 
-    bool findSave = false;
-    bool findAboutTheJob = false;
-
-    if (argc == 2) {
-        std::string arg = argv[1];
-        if (arg == "find-save") {
-            findSave = true;
-        } else if (arg == "find-about") {
-            findAboutTheJob = true;
-        }
+    if (argc < 2) {
+        std::cerr << "Usage: visualizer.exe <screenshotPath> [find-save | find-about]" << std::endl;
+        return 1;
     }
 
-    cv::Mat screenshot = cv::imread("linkedInScreen.bmp");
+    std::string screenshotPath = argv[1];
+    std::string mode = (argc >= 3) ? argv[2] : "";
+
+    bool findSave = (mode == "find-save");
+    bool findAboutTheJob = (mode == "find-about");
+    bool findMenu = (mode == "find-menu");
+
+    cv::Mat screenshot = cv::imread(screenshotPath);
     cv::Mat templateImg = cv::imread("templates/job-post-exit.png");
     cv::Mat saveButtonTemplate = cv::imread("templates/save-button.png");
     cv::Mat aboutTheJobTemplate = cv::imread("templates/about-the-job.png");
+    cv::Mat menuButtonTemplate = cv::imread("templates/menu-arrow.png");
 
     if (screenshot.empty() || templateImg.empty() || saveButtonTemplate.empty() || aboutTheJobTemplate.empty()) {
         std::cout << (findSave || findAboutTheJob ? "{}" : "[]") << std::endl;
@@ -59,6 +65,12 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    if (findMenu) {
+        detectAndPrint(screenshot, menuButtonTemplate);
+        return 0;
+    }
+
+    // Default case: find job post exit buttons
     cv::Mat result;
     cv::matchTemplate(screenshot, templateImg, result, cv::TM_CCOEFF_NORMED);
 
@@ -102,12 +114,18 @@ int main(int argc, char* argv[]) {
 
     std::cout << "[";
     for (size_t i = 0; i < filteredPoints.size(); ++i) {
-        int centerX = filteredPoints[i].x + templateImg.cols / 2;
-        int centerY = filteredPoints[i].y + templateImg.rows / 2;
-        std::cout << "{ \"x\": " << centerX << ", \"y\": " << centerY << " }";
-        if (i != filteredPoints.size() - 1) {
-            std::cout << ",";
-        }
+        int xStart = filteredPoints[i].x;
+        int yStart = filteredPoints[i].y;
+        int centerX = xStart + templateImg.cols / 2;
+        int centerY = yStart + templateImg.rows / 2;
+
+        std::cout << "{ \"x\": " << centerX
+                  << ", \"y\": " << centerY
+                  << ", \"xStart\": " << xStart
+                  << ", \"yStart\": " << yStart
+                  << " }";
+
+        if (i != filteredPoints.size() - 1) std::cout << ",";
     }
     std::cout << "]" << std::endl;
 
