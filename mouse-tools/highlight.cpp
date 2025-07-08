@@ -43,6 +43,16 @@ int main(int argc, char* argv[]) {
 
     // Release click
     mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // Simulate Ctrl+C to copy highlighted text
+    keybd_event(VK_CONTROL, 0, 0, 0);              // Press Ctrl
+    keybd_event('C', 0, 0, 0);                     // Press C
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    keybd_event('C', 0, KEYEVENTF_KEYUP, 0);       // Release C
+    keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0); // Release Ctrl
+
+    std::cout << "Copied highlighted text to clipboard." << std::endl;
 
     return 0;
 }

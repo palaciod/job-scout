@@ -1,0 +1,1 @@
+g++ dumpClipBoard.cpp -o dumpClipboard.exe

@@ -14,12 +14,16 @@ const visualizerPath = path.join(mouseToolsPath, 'visualizer.exe');
 const moveMousePath = path.join(mouseToolsPath, 'moveMouse.exe');
 const escapePath = path.join(mouseToolsPath, 'escape.exe');
 const highlightPath = path.join(mouseToolsPath, 'highlight.exe');
+const scrollPath = path.join(mouseToolsPath, 'scroll.exe');
+const dumpClipBoardPath = path.join(mouseToolsPath, 'dumpClipBoard.exe');
 
 const buildMoveMouse = path.join(mouseToolsPath, 'buildMoveMouse.bat');
 const buildVisualizer = path.join(mouseToolsPath, 'buildVisualizer.bat');
 const screenshotBuilder = path.join(mouseToolsPath, 'screenshotBuilder.bat');
 const buildEscape = path.join(mouseToolsPath, 'buildEscape.bat');
 const buildHighlight = path.join(mouseToolsPath, 'buildHighlight.bat');
+const buildScroll = path.join(mouseToolsPath, 'buildScroll.bat');
+const buildDumpData = path.join(mouseToolsPath, 'buildDumpData.bat');
 
 
 const execPromise = promisify(exec);
@@ -48,6 +52,14 @@ const initialize = async () => {
         if (!fs.existsSync(highlightPath)) {
             console.log('highlight.exe not found, building... ');
             await execPromise(`"${buildHighlight}"`, { cwd: mouseToolsPath });
+        }
+        if (!fs.existsSync(scrollPath)) {
+            console.log('scroll.exe not found, building... ');
+            await execPromise(`"${buildScroll}"`, { cwd: mouseToolsPath });
+        }
+        if (!fs.existsSync(dumpClipBoardPath)) {
+            console.log('dumpClipboard.exe not found, building... ');
+            await execPromise(`"${buildDumpData}"`, { cwd: mouseToolsPath });
         }
     } catch (err) {
         console.error(`Initialization error: ${err.message}`);
@@ -85,13 +97,26 @@ const moveWithEscapeCheck = (x, y, shouldClick) => {
     });
 };
 
+const findButton = async (imageLocation, buttonToFind, attempt = 1, maxAttempts = 10) => {
+    const output = await execPromise(`"${visualizerPath}" ${imageLocation} ${buttonToFind}`);
+    const result = JSON.parse(output.stdout.trim());
+    if (!result?.xStart) {
+        if (attempt >= maxAttempts) {
+            throw new Error("Button not found after multiple scrolls.");
+        }
+        await execPromise(`"${screenshotPath}" jobPost`);
+        await execPromise(`"${scrollPath}"`);
+        return findButton(imageLocation, buttonToFind, attempt + 1, maxAttempts);
+    }
+
+    console.log('found!');
+    return result;
+};
+
+
 const runBot = async () => {
     try {
-        console.log('Taking screenshot...');
         await execPromise(`"${screenshotPath}"`);
-        console.log('Screenshot complete.');
-
-        console.log('Running visualizer...');
         const linkedInScreenshot = 'screenshots/linkedInScreen.bmp';
         const { stdout } = await execPromise(`"${visualizerPath}" ${linkedInScreenshot}`);
         const menuButtonPoint = await execPromise(`"${visualizerPath}" ${linkedInScreenshot} find-menu`);
@@ -104,20 +129,14 @@ const runBot = async () => {
             await moveWithEscapeCheck(x, y, 'click');
             await new Promise(resolve => setTimeout(resolve, 2000));
             await execPromise(`"${screenshotPath}" jobPost`);
+            console.log(`"${screenshotPath}" jobPost`, 'first screenshot');
             const jobPostScreen = 'screenshots/jobPost.bmp';
             const saveButtonPoint = await execPromise(`"${visualizerPath}" ${jobPostScreen} find-save`);
-            console.log('i ran <-----------> 1');
             const saveButton = JSON.parse(saveButtonPoint.stdout.trim());
-            // await moveWithEscapeCheck(saveButton.x, saveButton.y, "");
-            console.log('i ran <-----------> 2', `"${visualizerPath}"${jobPostScreen} find-about`);
-            const aboutTheJobButtonPoint = await execPromise(`"${visualizerPath}" ${jobPostScreen} find-about`);
-            console.log('i ran <-----------> 3');
-            const aboutButton = JSON.parse(aboutTheJobButtonPoint.stdout.trim());
+            await moveWithEscapeCheck(saveButton.x, saveButton.y, "");
+            const aboutButton = await findButton(jobPostScreen, "find-about");
             await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart, "");
-            console.log(`Save point at:`, aboutButton);
-            console.log(aboutTheJobButtonPoint, 'about button coord');
             // Highlight and scroll after arriving at About section
-            console.log('Running highlight drag + scroll...');
             await execPromise(`"${highlightPath}" ${menuButton.x} 30 -120`)
                 .catch(err => {
                     console.error("Highlight failed:", err.stderr || err.message);
