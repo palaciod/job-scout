@@ -2,14 +2,30 @@
 #include <winhttp.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #pragma comment(lib, "winhttp.lib")
 
-std::wstring stringToWstring(const std::string& str) {
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
-    std::wstring result(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &result[0], size_needed);
-    return result;
+std::string escapeJson(const std::string& input) {
+    std::ostringstream ss;
+    for (char c : input) {
+        switch (c) {
+            case '\"': ss << "\\\""; break;
+            case '\\': ss << "\\\\"; break;
+            case '\b': ss << "\\b"; break;
+            case '\f': ss << "\\f"; break;
+            case '\n': ss << "\\n"; break;
+            case '\r': ss << "\\r"; break;
+            case '\t': ss << "\\t"; break;
+            default:
+                if ('\x00' <= c && c <= '\x1f') {
+                    ss << "\\u" << std::hex << std::uppercase << (int)c;
+                } else {
+                    ss << c;
+                }
+        }
+    }
+    return ss.str();
 }
 
 std::string getClipboardText() {
@@ -33,13 +49,18 @@ std::string getClipboardText() {
     return text;
 }
 
-void postToAPI(const std::string& text) {
+void postToAPI(const std::string& rawText) {
     std::wstring host = L"localhost";
     std::wstring path = L"/jobs/dump-job";
-    std::string json = "{\"text\": \"" + text + "\"}";
-    std::wstring jsonW = stringToWstring(json);
 
-    HINTERNET hSession = WinHttpOpen(L"ClipboardUploader/1.0", WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    std::string escapedText = escapeJson(rawText);
+    std::string json = "{\"text\":\"" + escapedText + "\"}";
+
+    HINTERNET hSession = WinHttpOpen(L"ClipboardUploader/1.0",
+        WINHTTP_ACCESS_TYPE_NO_PROXY,
+        WINHTTP_NO_PROXY_NAME,
+        WINHTTP_NO_PROXY_BYPASS, 0);
+
     if (!hSession) {
         std::cerr << "Failed to open HTTP session.\n";
         return;
@@ -52,7 +73,10 @@ void postToAPI(const std::string& text) {
         return;
     }
 
-    HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"POST", path.c_str(), NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+    HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"POST", path.c_str(),
+        NULL, WINHTTP_NO_REFERER,
+        WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+
     if (!hRequest) {
         std::cerr << "Failed to open request handle.\n";
         WinHttpCloseHandle(hConnect);
@@ -61,9 +85,17 @@ void postToAPI(const std::string& text) {
     }
 
     std::wstring headers = L"Content-Type: application/json\r\n";
-    BOOL sent = WinHttpSendRequest(hRequest, headers.c_str(), -1, (LPVOID)jsonW.c_str(), jsonW.length() * sizeof(wchar_t), jsonW.length() * sizeof(wchar_t), 0);
 
-    if (!sent) {
+    BOOL bResults = WinHttpSendRequest(
+        hRequest,
+        headers.c_str(),
+        -1,
+        (LPVOID)json.c_str(),
+        (DWORD)json.length(),
+        (DWORD)json.length(),
+        0);
+
+    if (!bResults) {
         std::cerr << "Failed to send HTTP request.\n";
     } else {
         WinHttpReceiveResponse(hRequest, NULL);

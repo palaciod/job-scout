@@ -58,7 +58,7 @@ const initialize = async () => {
             await execPromise(`"${buildScroll}"`, { cwd: mouseToolsPath });
         }
         if (!fs.existsSync(dumpClipBoardPath)) {
-            console.log('dumpClipboard.exe not found, building... ');
+            console.log('dumpClipBoard.exe not found, building... ');
             await execPromise(`"${buildDumpData}"`, { cwd: mouseToolsPath });
         }
     } catch (err) {
@@ -141,6 +141,7 @@ const runBot = async () => {
                 .catch(err => {
                     console.error("Highlight failed:", err.stderr || err.message);
                 });
+            await execPromise(`"${dumpClipBoardPath}"`);
         }
 
         console.log('All points completed.');

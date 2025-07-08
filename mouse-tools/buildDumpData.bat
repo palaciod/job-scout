@@ -1,1 +1,1 @@
-g++ dumpClipBoard.cpp -o dumpClipboard.exe
+g++ dumpClipBoard.cpp -o dumpClipBoard.exe -lwinhttp -lole32 -luuid
