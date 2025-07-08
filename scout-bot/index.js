@@ -16,6 +16,7 @@ const escapePath = path.join(mouseToolsPath, 'escape.exe');
 const highlightPath = path.join(mouseToolsPath, 'highlight.exe');
 const scrollPath = path.join(mouseToolsPath, 'scroll.exe');
 const dumpClipBoardPath = path.join(mouseToolsPath, 'dumpClipBoard.exe');
+const findTextImagePath = path.join(mouseToolsPath, 'findTextImage.exe');
 
 const buildMoveMouse = path.join(mouseToolsPath, 'buildMoveMouse.bat');
 const buildVisualizer = path.join(mouseToolsPath, 'buildVisualizer.bat');
@@ -24,6 +25,7 @@ const buildEscape = path.join(mouseToolsPath, 'buildEscape.bat');
 const buildHighlight = path.join(mouseToolsPath, 'buildHighlight.bat');
 const buildScroll = path.join(mouseToolsPath, 'buildScroll.bat');
 const buildDumpData = path.join(mouseToolsPath, 'buildDumpData.bat');
+const buildTextImageFinder = path.join(mouseToolsPath, 'buildTextImageFinder.bat');
 
 
 const execPromise = promisify(exec);
@@ -60,6 +62,10 @@ const initialize = async () => {
         if (!fs.existsSync(dumpClipBoardPath)) {
             console.log('dumpClipBoard.exe not found, building... ');
             await execPromise(`"${buildDumpData}"`, { cwd: mouseToolsPath });
+        }
+        if (!fs.existsSync(findTextImagePath)) {
+            console.log('findTextImage.exe not found, building... ');
+            await execPromise(`"${buildTextImageFinder}"`, { cwd: mouseToolsPath });
         }
     } catch (err) {
         console.error(`Initialization error: ${err.message}`);
@@ -127,9 +133,13 @@ const runBot = async () => {
 
         for (const { x, y } of points) {
             await moveWithEscapeCheck(x, y, 'click');
+            // the delay is for that scroll animation
             await new Promise(resolve => setTimeout(resolve, 2000));
             await execPromise(`"${screenshotPath}" jobPost`);
             console.log(`"${screenshotPath}" jobPost`, 'first screenshot');
+            const jobDataRaw = await execPromise(`"${findTextImagePath}" applicants hours`);
+            const jobData =  JSON.parse(jobDataRaw.stdout.trim());
+            console.log(jobData, 'job data');
             const jobPostScreen = 'screenshots/jobPost.bmp';
             const saveButtonPoint = await execPromise(`"${visualizerPath}" ${jobPostScreen} find-save`);
             const saveButton = JSON.parse(saveButtonPoint.stdout.trim());

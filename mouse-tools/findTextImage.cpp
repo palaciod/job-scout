@@ -19,6 +19,18 @@ std::string toLower(const std::string& s) {
     return out;
 }
 
+// Escape quotes, newlines, carriage returns
+std::string escapeQuotes(const std::string& str) {
+    std::string result;
+    for (char c : str) {
+        if (c == '"') result += "\\\"";
+        else if (c == '\n') result += "\\n";
+        else if (c == '\r') result += "\\r";
+        else result += c;
+    }
+    return result;
+}
+
 int main(int argc, char* argv[]) {
     SetProcessDPIAware();
     _putenv("TESSDATA_PREFIX=C:\\msys64\\ucrt64\\share\\tessdata\\");
@@ -28,7 +40,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::string imagePath = "templates/applicant-amount.png";
+    std::string imagePath =  "screenshots/jobPost.bmp";
 
     Pix* image = pixRead(imagePath.c_str());
     if (!image) {
@@ -49,7 +61,6 @@ int main(int argc, char* argv[]) {
     tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
 
     std::vector<OCRWord> words;
-
     if (ri != nullptr) {
         do {
             const char* word = ri->GetUTF8Text(level);
@@ -62,7 +73,7 @@ int main(int argc, char* argv[]) {
         } while (ri->Next(level));
     }
 
-    bool anyMatchFound = false;
+    std::cout << "{\n";
 
     for (int i = 1; i < argc; ++i) {
         std::string searchWord = argv[i];
@@ -71,11 +82,9 @@ int main(int argc, char* argv[]) {
         for (const auto& w : words) {
             if (toLower(w.text).find(toLower(searchWord)) != std::string::npos) {
                 matchFound = true;
-                anyMatchFound = true;
+                std::string foundLine;
+                std::string bestNumber;
 
-                std::cout << "\n🔍 Searching for: " << searchWord << "\n";
-                std::cout << "Found word: " << w.text << "\n";
-                std::cout << "Bounding box: (" << w.x1 << ", " << w.y1 << ") -> (" << w.x2 << ", " << w.y2 << ")\n";
                 tesseract::ResultIterator* lineIt = api->GetIterator();
                 if (lineIt != nullptr) {
                     do {
@@ -83,18 +92,16 @@ int main(int argc, char* argv[]) {
                         int lx1, ly1, lx2, ly2;
                         lineIt->BoundingBox(tesseract::RIL_WORD, &lx1, &ly1, &lx2, &ly2);
 
-                        if (wordText &&
-                            lx1 == w.x1 && ly1 == w.y1 && lx2 == w.x2 && ly2 == w.y2) {
-
+                        if (wordText && lx1 == w.x1 && ly1 == w.y1 && lx2 == w.x2 && ly2 == w.y2) {
                             const char* lineText = lineIt->GetUTF8Text(tesseract::RIL_TEXTLINE);
-                            std::string lineStr = lineText ? lineText : "[unreadable]";
-                            std::cout << "-> Line: " << lineStr << "\n";
+                            std::string lineStr = lineText ? lineText : "";
+                            foundLine = lineStr;
+
                             std::regex numberRegex(R"(\d[\d,\.]*[+%]?)");
                             std::sregex_iterator numbersBegin(lineStr.begin(), lineStr.end(), numberRegex);
                             std::sregex_iterator numbersEnd;
 
                             size_t bestPos = std::string::npos;
-                            std::string bestNumber;
                             size_t wordPos = lineStr.find(w.text);
 
                             for (auto it = numbersBegin; it != numbersEnd; ++it) {
@@ -108,10 +115,6 @@ int main(int argc, char* argv[]) {
                                 }
                             }
 
-                            if (!bestNumber.empty()) {
-                                std::cout << "-> Number in line: " << bestNumber << "\n";
-                            }
-
                             delete[] lineText;
                         }
 
@@ -119,15 +122,26 @@ int main(int argc, char* argv[]) {
                     } while (lineIt->Next(tesseract::RIL_WORD));
                 }
 
+                std::cout << "  \"" << searchWord << "\": {\n";
+                std::cout << "    \"found\": true,\n";
+                std::cout << "    \"boundingBox\": [{\"x\": " << w.x1 << ", \"y\": " << w.y1 << "}, {\"x\": " << w.x2 << ", \"y\": " << w.y2 << "}],\n";
+                std::cout << "    \"line\": \"" << escapeQuotes(foundLine) << "\",\n";
+                std::cout << "    \"number\": " << (bestNumber.empty() ? "null" : bestNumber) << "\n";
+                std::cout << "  }";
+
                 break;
             }
         }
 
         if (!matchFound) {
-            std::cout << "\n🔍 Searching for: " << searchWord << "\n";
-            std::cout << "No match found for \"" << searchWord << "\"\n";
+            std::cout << "  \"" << searchWord << "\": { \"found\": false }";
         }
+
+        if (i < argc - 1) std::cout << ",\n";
+        else std::cout << "\n";
     }
+
+    std::cout << "}\n";
 
     api->End();
     pixDestroy(&image);
