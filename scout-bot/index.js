@@ -123,25 +123,33 @@ const findButton = async (imageLocation, buttonToFind, attempt = 1, maxAttempts 
 const runBot = async () => {
     try {
         await execPromise(`"${screenshotPath}" linkedInScreen`);
-        const linkedInScreenshot = 'screenshots/linkedInScreen.bmp';
+        const linkedInScreenshot = 'screenshots/linkedInScreen.png';
         const { stdout } = await execPromise(`"${visualizerPath}" ${linkedInScreenshot}`);
         const menuButtonPoint = await execPromise(`"${visualizerPath}" ${linkedInScreenshot} find-menu`);
         const menuButton = JSON.parse(menuButtonPoint.stdout.trim());
         const points = JSON.parse(stdout.trim());
-
-        console.log('Detected job postings:', points);
+        let start;
+        let end;
+        console.log('Detected job postings:', points, start, end);
 
         for (const { x, y, xStart, yStart } of points) {
+            if (start === undefined) {
+                start = xStart;
+                end = yStart;
+            }
             await moveWithEscapeCheck(x, y, 'click');
+            console.log(start, end);
             // the delay is for that scroll animation
             await new Promise(resolve => setTimeout(resolve, 2000));
             await execPromise(`"${screenshotPath}" jobPost`);
-            await execPromise(`"${screenshotPath}" topJobPost ${xStart} ${yStart}`);
+            await execPromise(`"${screenshotPath}" topJobPost ${start} ${end}`);
             console.log(`"${screenshotPath}" jobPost`, 'first screenshot');
-            const jobDataRaw = await execPromise(`"${findTextImagePath}" screenshots/topJobPost.bmp applicants hours`);
+            const jobDataRaw = await execPromise(`"${findTextImagePath}" screenshots/topJobPost.png applicants hours people minutes`);
+            console.log('i ran! <1>', jobDataRaw);
             const jobData =  JSON.parse(jobDataRaw.stdout.trim());
+            console.log('i ran! <2>');
             console.log(jobData, 'job data');
-            const jobPostScreen = 'screenshots/jobPost.bmp';
+            const jobPostScreen = 'screenshots/jobPost.png';
             const saveButtonPoint = await execPromise(`"${visualizerPath}" ${jobPostScreen} find-save`);
             const saveButton = JSON.parse(saveButtonPoint.stdout.trim());
             await moveWithEscapeCheck(saveButton.x, saveButton.y, "");

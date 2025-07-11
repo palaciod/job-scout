@@ -1,8 +1,11 @@
 #include <windows.h>
+#include <png.h>
+#include <vector>
 #include <iostream>
 #include <string>
 #include <filesystem>
 #include <sstream>
+#include <cstdio>
 
 int Clamp(int val, int minVal, int maxVal) {
     return (val < minVal) ? minVal : (val > maxVal) ? maxVal : val;
@@ -12,25 +15,19 @@ int main(int argc, char* argv[]) {
     SetProcessDPIAware();
 
     if (argc < 2) {
-        std::cerr << "Usage: screenshot.exe <filename> [width height]\n";
+        std::cerr << "Usage: screenshot.exe <filename> [x y]\n";
         return 1;
     }
 
+    const int fixedWidth = 1000;
+    const int fixedHeight = 500;
+
     std::string filename = argv[1];
-    int captureWidth = 0;
-    int captureHeight = 0;
+    int captureX = 0;
+    int captureY = 0;
+    int captureWidth = fixedWidth;
+    int captureHeight = fixedHeight;
     bool captureWholeScreen = true;
-
-    if (argc >= 4) {
-        captureWidth = std::stoi(argv[2]);
-        captureHeight = std::stoi(argv[3]);
-        captureWholeScreen = false;
-    }
-
-    std::string folder = "screenshots";
-    std::string fullPath = folder + "\\" + filename + ".bmp";
-    std::wstring widePath(fullPath.begin(), fullPath.end());
-    std::filesystem::create_directory(folder);
 
     MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
     HMONITOR hMonitor = MonitorFromWindow(NULL, MONITOR_DEFAULTTOPRIMARY);
@@ -43,25 +40,25 @@ int main(int argc, char* argv[]) {
     int monitorWidth = rc.right - rc.left;
     int monitorHeight = rc.bottom - rc.top;
 
-    int captureX = rc.left;
-    int captureY = rc.top;
-
-    if (!captureWholeScreen) {
-        POINT mousePos;
-        if (!GetCursorPos(&mousePos)) {
-            std::cerr << "Failed to get mouse position.\n";
-            return 1;
-        }
-        captureX = mousePos.x;
-        captureY = mousePos.y - captureHeight / 2;
+    if (argc >= 4) {
+        captureWholeScreen = false;
+        int inputX = std::stoi(argv[2]);
+        int inputY = std::stoi(argv[3]);
+        captureX = inputX;
+        captureY = inputY - captureHeight;
         captureX = Clamp(captureX, rc.left, rc.right - captureWidth);
         captureY = Clamp(captureY, rc.top, rc.bottom - captureHeight);
     } else {
+        captureX = rc.left;
+        captureY = rc.top;
         captureWidth = monitorWidth;
         captureHeight = monitorHeight;
     }
 
-    // Capture screen
+    std::string folder = "screenshots";
+    std::filesystem::create_directory(folder);
+    std::string fullPath = folder + "\\" + filename + ".png";
+
     HDC hScreenDC = GetDC(NULL);
     HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
     HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, captureWidth, captureHeight);
@@ -75,7 +72,6 @@ int main(int argc, char* argv[]) {
     SelectObject(hMemoryDC, hBitmap);
     BitBlt(hMemoryDC, 0, 0, captureWidth, captureHeight, hScreenDC, captureX, captureY, SRCCOPY);
 
-    BITMAPFILEHEADER bmfHeader;
     BITMAPINFOHEADER bi;
     bi.biSize = sizeof(BITMAPINFOHEADER);
     bi.biWidth = captureWidth;
@@ -83,61 +79,74 @@ int main(int argc, char* argv[]) {
     bi.biPlanes = 1;
     bi.biBitCount = 32;
     bi.biCompression = BI_RGB;
-    bi.biSizeImage = captureWidth * 4 * captureHeight;
+    bi.biSizeImage = 0;
     bi.biXPelsPerMeter = 0;
     bi.biYPelsPerMeter = 0;
     bi.biClrUsed = 0;
     bi.biClrImportant = 0;
 
-    DWORD dwBmpSize = bi.biSizeImage;
-    HANDLE hDIB = GlobalAlloc(GHND, dwBmpSize);
-    if (!hDIB) {
-        std::cerr << "GlobalAlloc failed.\n";
+    int imageSize = captureWidth * captureHeight * 4;
+    std::vector<unsigned char> pixels(imageSize);
+
+    if (GetDIBits(hMemoryDC, hBitmap, 0, captureHeight, pixels.data(), (BITMAPINFO*)&bi, DIB_RGB_COLORS) == 0) {
+        std::cerr << "Failed to get bitmap data.\n";
         DeleteObject(hBitmap);
         DeleteDC(hMemoryDC);
         ReleaseDC(NULL, hScreenDC);
         return 1;
     }
 
-    char* lpbitmap = (char*)GlobalLock(hDIB);
-    if (!lpbitmap) {
-        std::cerr << "GlobalLock failed.\n";
-        GlobalFree(hDIB);
+    // Convert BGRA to RGBA
+    for (int i = 0; i < imageSize; i += 4) {
+        std::swap(pixels[i], pixels[i + 2]);
+    }
+
+    FILE* fp = fopen(fullPath.c_str(), "wb");
+    if (!fp) {
+        std::cerr << "Failed to open file for PNG output.\n";
         DeleteObject(hBitmap);
         DeleteDC(hMemoryDC);
         ReleaseDC(NULL, hScreenDC);
         return 1;
     }
 
-    GetDIBits(hMemoryDC, hBitmap, 0, (UINT)captureHeight, lpbitmap, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
-
-    HANDLE hFile = CreateFileW(widePath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        std::cerr << "Failed to create file: " << fullPath << std::endl;
-        GlobalUnlock(hDIB);
-        GlobalFree(hDIB);
-        DeleteObject(hBitmap);
-        DeleteDC(hMemoryDC);
-        ReleaseDC(NULL, hScreenDC);
+    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!png_ptr || !info_ptr) {
+        std::cerr << "Failed to create PNG write struct.\n";
+        fclose(fp);
         return 1;
     }
 
-    DWORD dwBytesWritten;
-    bmfHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-    bmfHeader.bfSize = dwBmpSize + bmfHeader.bfOffBits;
-    bmfHeader.bfType = 0x4D42;
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        std::cerr << "PNG write error.\n";
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+        fclose(fp);
+        return 1;
+    }
 
-    WriteFile(hFile, (LPSTR)&bmfHeader, sizeof(BITMAPFILEHEADER), &dwBytesWritten, NULL);
-    WriteFile(hFile, (LPSTR)&bi, sizeof(BITMAPINFOHEADER), &dwBytesWritten, NULL);
-    WriteFile(hFile, lpbitmap, dwBmpSize, &dwBytesWritten, NULL);
+    png_init_io(png_ptr, fp);
+    png_set_IHDR(png_ptr, info_ptr, captureWidth, captureHeight,
+                 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+    png_write_info(png_ptr, info_ptr);
 
-    GlobalUnlock(hDIB);
-    GlobalFree(hDIB);
-    CloseHandle(hFile);
+    std::vector<png_bytep> row_pointers(captureHeight);
+    for (int y = 0; y < captureHeight; ++y) {
+        row_pointers[y] = pixels.data() + y * captureWidth * 4;
+    }
+
+    png_write_image(png_ptr, row_pointers.data());
+    png_write_end(png_ptr, NULL);
+
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fclose(fp);
+
+    std::cout << "Screenshot saved to " << fullPath << std::endl;
+
     DeleteObject(hBitmap);
     DeleteDC(hMemoryDC);
     ReleaseDC(NULL, hScreenDC);
 
-    std::cout << "Screenshot saved to " << fullPath << std::endl;
     return 0;
 }

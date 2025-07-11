@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "C:/msys64/ucrt64/include",
-                "C:/msys64/ucrt64/include/opencv4"
+                "C:/msys64/ucrt64/include/opencv4",
+                "C:/msys64/ucrt64/include/bullet/ThirdPartyLibs/stb_image"
             ],
             "defines": [
                 "_DEBUG",
