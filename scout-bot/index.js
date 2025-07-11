@@ -122,7 +122,7 @@ const findButton = async (imageLocation, buttonToFind, attempt = 1, maxAttempts 
 
 const runBot = async () => {
     try {
-        await execPromise(`"${screenshotPath}"`);
+        await execPromise(`"${screenshotPath}" linkedInScreen`);
         const linkedInScreenshot = 'screenshots/linkedInScreen.bmp';
         const { stdout } = await execPromise(`"${visualizerPath}" ${linkedInScreenshot}`);
         const menuButtonPoint = await execPromise(`"${visualizerPath}" ${linkedInScreenshot} find-menu`);
@@ -131,13 +131,14 @@ const runBot = async () => {
 
         console.log('Detected job postings:', points);
 
-        for (const { x, y } of points) {
+        for (const { x, y, xStart, yStart } of points) {
             await moveWithEscapeCheck(x, y, 'click');
             // the delay is for that scroll animation
             await new Promise(resolve => setTimeout(resolve, 2000));
             await execPromise(`"${screenshotPath}" jobPost`);
+            await execPromise(`"${screenshotPath}" topJobPost ${xStart} ${yStart}`);
             console.log(`"${screenshotPath}" jobPost`, 'first screenshot');
-            const jobDataRaw = await execPromise(`"${findTextImagePath}" applicants hours`);
+            const jobDataRaw = await execPromise(`"${findTextImagePath}" screenshots/topJobPost.bmp applicants hours`);
             const jobData =  JSON.parse(jobDataRaw.stdout.trim());
             console.log(jobData, 'job data');
             const jobPostScreen = 'screenshots/jobPost.bmp';
