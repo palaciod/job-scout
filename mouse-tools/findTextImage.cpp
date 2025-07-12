@@ -38,11 +38,9 @@ std::string escapeQuotes(const std::string& str) {
 
 Pix* mat8ToPix(const cv::Mat& mat) {
     Pix* pixs = pixCreate(mat.cols, mat.rows, 8);
-    for (int y = 0; y < mat.rows; ++y) {
-        for (int x = 0; x < mat.cols; ++x) {
+    for (int y = 0; y < mat.rows; ++y)
+        for (int x = 0; x < mat.cols; ++x)
             pixSetPixel(pixs, x, y, mat.at<uchar>(y, x));
-        }
-    }
     return pixs;
 }
 
@@ -56,19 +54,18 @@ int main(int argc, char* argv[]) {
     }
 
     std::string imagePath = argv[1];
-
     cv::Mat img = cv::imread(imagePath);
     if (img.empty()) {
         std::cerr << "Failed to load image: " << imagePath << "\n";
         return 1;
     }
 
-    cv::Mat gray, thresh;
+    cv::Mat gray;
     cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
-    cv::resize(gray, gray, cv::Size(), 2.0, 2.0, cv::INTER_CUBIC);
-    cv::adaptiveThreshold(gray, thresh, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 11, 2);
+    cv::resize(gray, gray, cv::Size(), 1.5, 1.5, cv::INTER_LINEAR);
+    gray.convertTo(gray, -1, 1.3, 0); // contrast boost (fast and helps thin fonts)
 
-    Pix* image = mat8ToPix(thresh);
+    Pix* image = mat8ToPix(gray);
     if (!image) {
         std::cerr << "Failed to convert image to Pix.\n";
         return 1;
@@ -80,7 +77,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    api->SetPageSegMode(tesseract::PSM_SPARSE_TEXT);
+    api->SetPageSegMode(tesseract::PSM_AUTO); // Use AUTO segmentation (change to PSM_SPARSE_TEXT if preferred)
     api->SetVariable("preserve_interword_spaces", "1");
     api->SetImage(image);
     api->Recognize(0);
@@ -164,12 +161,11 @@ int main(int argc, char* argv[]) {
                     std::cout << "    \"line\": \"" << escapeQuotes(line.text) << "\",\n";
                     std::cout << "    \"number\": " << (bestNumber.empty() ? "null" : ("\"" + bestNumber + "\"")) << "\n";
                     std::cout << "  }";
-                    goto EndMatchLoop;
+                    break;
                 }
             }
         }
 
-    EndMatchLoop:
         if (!matchFound) {
             std::cout << "  \"" << searchWord << "\": { \"found\": false }";
         }
@@ -179,6 +175,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "}\n";
+
     if (!anyMatchFound) {
         std::cout << "\n[DEBUG] No matches found. Here’s everything Tesseract detected:\n";
         for (const auto& line : lines) {

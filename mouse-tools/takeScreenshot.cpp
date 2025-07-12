@@ -15,18 +15,17 @@ int main(int argc, char* argv[]) {
     SetProcessDPIAware();
 
     if (argc < 2) {
-        std::cerr << "Usage: screenshot.exe <filename> [x y]\n";
+        std::cerr << "Usage: screenshot.exe <filename> [x y xOffset yOffset width height]\n";
         return 1;
     }
 
-    const int fixedWidth = 1000;
-    const int fixedHeight = 500;
+    // Default dimensions
+    int captureWidth = 1000;
+    int captureHeight = 550;
 
     std::string filename = argv[1];
     int captureX = 0;
     int captureY = 0;
-    int captureWidth = fixedWidth;
-    int captureHeight = fixedHeight;
     bool captureWholeScreen = true;
 
     MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
@@ -44,10 +43,30 @@ int main(int argc, char* argv[]) {
         captureWholeScreen = false;
         int inputX = std::stoi(argv[2]);
         int inputY = std::stoi(argv[3]);
-        captureX = inputX;
-        captureY = inputY - captureHeight;
-        captureX = Clamp(captureX, rc.left, rc.right - captureWidth);
-        captureY = Clamp(captureY, rc.top, rc.bottom - captureHeight);
+        int xOffset = 0;
+        int yOffset = 0;
+
+        if (argc >= 5) {
+            xOffset = std::stoi(argv[4]);
+        }
+        if (argc >= 6) {
+            yOffset = std::stoi(argv[5]);
+        }
+        if (argc >= 8) {
+            captureWidth = std::stoi(argv[6]);
+            captureHeight = std::stoi(argv[7]);
+        }
+
+        int proposedX = inputX + xOffset;
+        int proposedY = inputY + yOffset - captureHeight;
+
+        captureX = Clamp(proposedX, rc.left, rc.right - captureWidth);
+        captureY = Clamp(proposedY, rc.top, rc.bottom - captureHeight);
+
+        std::cout << "Requested X: " << inputX << ", Y: " << inputY
+                  << ", xOffset: " << xOffset << ", yOffset: " << yOffset
+                  << ", Width: " << captureWidth << ", Height: " << captureHeight << "\n";
+        std::cout << "Final capture at (" << captureX << ", " << captureY << ")\n";
     } else {
         captureX = rc.left;
         captureY = rc.top;
