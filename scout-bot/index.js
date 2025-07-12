@@ -38,17 +38,14 @@ const initialize = async () => {
       console.log("screenshot.exe not found, building...");
       await execPromise(`"${screenshotBuilder}"`, { cwd: mouseToolsPath });
     }
-
     if (!fs.existsSync(visualizerPath)) {
       console.log("visualizer.exe not found, building...");
       await execPromise(`"${buildVisualizer}"`, { cwd: mouseToolsPath });
     }
-
     if (!fs.existsSync(moveMousePath)) {
       console.log("moveMouse.exe not found, building...");
       await execPromise(`"${buildMoveMouse}"`, { cwd: mouseToolsPath });
     }
-
     if (!fs.existsSync(escapePath)) {
       console.log("escape.exe not found, building...");
       await execPromise(`"${buildEscape}"`, { cwd: mouseToolsPath });
@@ -138,29 +135,20 @@ const findButton = async (
 
 const findSaveButton = async (jobPostScreen, attempt = 1, maxAttempts = 3) => {
   console.log(`Attempt ${attempt} to find save button...`);
-
-  // Take a screenshot
   await execPromise(`"${screenshotPath}" jobPost`);
-
-  // Run visualizer to locate the save button
   const output = await execPromise(
     `"${visualizerPath}" "${jobPostScreen}" find-save`
   );
   const result = JSON.parse(output.stdout.trim());
-
-  // Retry if not found
   if (result?.x === undefined || result?.y === undefined) {
     if (attempt >= maxAttempts) {
       throw new Error("Save button not found after multiple attempts.");
     }
     return findSaveButton(jobPostScreen, attempt + 1, maxAttempts);
   }
-
-  // Move mouse to the location
   await moveWithEscapeCheck(result.x, result.y, "");
   return result;
 };
-
 
 const runBot = async () => {
   const jobPostScreen = "screenshots/jobPost.png";
