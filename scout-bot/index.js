@@ -25,46 +25,28 @@ const buildEscape = path.join(mouseToolsPath, "buildEscape.bat");
 const buildHighlight = path.join(mouseToolsPath, "buildHighlight.bat");
 const buildScroll = path.join(mouseToolsPath, "buildScroll.bat");
 const buildDumpData = path.join(mouseToolsPath, "buildDumpData.bat");
-const buildTextImageFinder = path.join(
-  mouseToolsPath,
-  "buildTextImageFinder.bat"
-);
+const buildTextImageFinder = path.join(mouseToolsPath, "buildTextImageFinder.bat");
 
 const execPromise = promisify(exec);
 
 const initialize = async () => {
   try {
-    if (!fs.existsSync(screenshotPath)) {
-      console.log("screenshot.exe not found, building...");
-      await execPromise(`"${screenshotBuilder}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(visualizerPath)) {
-      console.log("visualizer.exe not found, building...");
-      await execPromise(`"${buildVisualizer}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(moveMousePath)) {
-      console.log("moveMouse.exe not found, building...");
-      await execPromise(`"${buildMoveMouse}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(escapePath)) {
-      console.log("escape.exe not found, building...");
-      await execPromise(`"${buildEscape}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(highlightPath)) {
-      console.log("highlight.exe not found, building... ");
-      await execPromise(`"${buildHighlight}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(scrollPath)) {
-      console.log("scroll.exe not found, building... ");
-      await execPromise(`"${buildScroll}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(dumpClipBoardPath)) {
-      console.log("dumpClipBoard.exe not found, building... ");
-      await execPromise(`"${buildDumpData}"`, { cwd: mouseToolsPath });
-    }
-    if (!fs.existsSync(findTextImagePath)) {
-      console.log("findTextImage.exe not found, building... ");
-      await execPromise(`"${buildTextImageFinder}"`, { cwd: mouseToolsPath });
+    const toolBuildPairs = [
+      [screenshotPath, screenshotBuilder],
+      [visualizerPath, buildVisualizer],
+      [moveMousePath, buildMoveMouse],
+      [escapePath, buildEscape],
+      [highlightPath, buildHighlight],
+      [scrollPath, buildScroll],
+      [dumpClipBoardPath, buildDumpData],
+      [findTextImagePath, buildTextImageFinder],
+    ];
+
+    for (const [tool, builder] of toolBuildPairs) {
+      if (!fs.existsSync(tool)) {
+        console.log(`${path.basename(tool)} not found, building...`);
+        await execPromise(`"${builder}"`, { cwd: mouseToolsPath });
+      }
     }
   } catch (err) {
     console.error(`Initialization error: ${err.message}`);
@@ -133,7 +115,7 @@ const findButton = async (
   return result;
 };
 
-const findSaveButton = async (jobPostScreen, attempt = 1, maxAttempts = 3) => {
+const findSaveButton = async (jobPostScreen, attempt = 1, maxAttempts = 10) => {
   console.log(`Attempt ${attempt} to find save button...`);
   await execPromise(`"${screenshotPath}" jobPost`);
   const output = await execPromise(
@@ -146,12 +128,18 @@ const findSaveButton = async (jobPostScreen, attempt = 1, maxAttempts = 3) => {
     }
     return findSaveButton(jobPostScreen, attempt + 1, maxAttempts);
   }
+
   await moveWithEscapeCheck(result.x, result.y, "");
+  if (attempt === 1) {
+    console.log("Retrying once after successful find...");
+    return findSaveButton(jobPostScreen, attempt + 1, maxAttempts);
+  }
   return result;
 };
 
 const runBot = async () => {
   const jobPostScreen = "screenshots/jobPost.png";
+  const screenshotRegion = [80, 100, 700, 250];
   try {
     await execPromise(`"${screenshotPath}" linkedInScreen`);
     const linkedInScreenshot = "screenshots/linkedInScreen.png";
@@ -174,25 +162,19 @@ const runBot = async () => {
       }
       await moveWithEscapeCheck(x, y, "click");
       console.log(start, end);
-      // the delay is for that scroll animation
-      //   await new Promise((resolve) => setTimeout(resolve, 2000));
       await findSaveButton(jobPostScreen);
 
-      //   1116 462 80 100 700 250 -> ratio for the fucking text to be read for openCv
       await execPromise(
-        `"${screenshotPath}" topJobPost ${start} ${end} 80 100 700 250`
+        `"${screenshotPath}" topJobPost ${start} ${end} ${screenshotRegion.join(" ")}`
       );
-      console.log(`"${screenshotPath}" jobPost`, "first screenshot");
       const jobDataRaw = await execPromise(
         `"${findTextImagePath}" screenshots/topJobPost.png applicants hours people minutes`
       );
-      console.log("i ran! <1>", jobDataRaw);
       const jobData = JSON.parse(jobDataRaw.stdout.trim());
-      console.log("i ran! <2>");
-      console.log(jobData, "job data");
+      console.log("Extracted job data:", jobData);
       const aboutButton = await findButton(jobPostScreen, "find-about");
       await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart, "");
-      // Highlight and scroll after arriving at About section
+
       await execPromise(`"${highlightPath}" ${menuButton.x} 30 -120`).catch(
         (err) => {
           console.error("Highlight failed:", err.stderr || err.message);
@@ -206,6 +188,10 @@ const runBot = async () => {
     console.error(`Error: ${err.message}`);
   }
 };
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+  process.exit(1);
+});
 
 const start = async () => {
   await initialize();
