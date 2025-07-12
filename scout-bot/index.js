@@ -25,7 +25,10 @@ const buildEscape = path.join(mouseToolsPath, "buildEscape.bat");
 const buildHighlight = path.join(mouseToolsPath, "buildHighlight.bat");
 const buildScroll = path.join(mouseToolsPath, "buildScroll.bat");
 const buildDumpData = path.join(mouseToolsPath, "buildDumpData.bat");
-const buildTextImageFinder = path.join(mouseToolsPath, "buildTextImageFinder.bat");
+const buildTextImageFinder = path.join(
+  mouseToolsPath,
+  "buildTextImageFinder.bat"
+);
 
 const execPromise = promisify(exec);
 
@@ -115,31 +118,72 @@ const findButton = async (
   return result;
 };
 
-const findSaveButton = async (jobPostScreen, attempt = 1, maxAttempts = 10) => {
+const findSaveButton = async (
+  jobPostScreen,
+  attempt = 1,
+  maxAttempts = 10,
+  hasRetriedAfterFind = false
+) => {
   console.log(`Attempt ${attempt} to find save button...`);
   await execPromise(`"${screenshotPath}" jobPost`);
+
   const output = await execPromise(
     `"${visualizerPath}" "${jobPostScreen}" find-save`
   );
   const result = JSON.parse(output.stdout.trim());
-  if (result?.x === undefined || result?.y === undefined) {
+
+  const notFound = result?.x === undefined || result?.y === undefined;
+
+  if (notFound) {
     if (attempt >= maxAttempts) {
       throw new Error("Save button not found after multiple attempts.");
     }
-    return findSaveButton(jobPostScreen, attempt + 1, maxAttempts);
+    return findSaveButton(jobPostScreen, attempt + 1, maxAttempts, false);
+  }
+  if (!hasRetriedAfterFind) {
+    console.log("Button found — retrying once more to confirm...");
+    return findSaveButton(jobPostScreen, attempt + 1, maxAttempts, true);
+  }
+  await moveWithEscapeCheck(result.x, result.y, "");
+  return result;
+};
+
+const shouldApply = (jobData) => {
+  console.log("Extracted job data:", jobData);
+  const firstLine = jobData.firstLine?.trim();
+  const blocklist = ["SY Jobright.ai"];
+  if (firstLine && blocklist.includes(firstLine)) {
+    console.log(`❌ Skipping: Blocked company "${firstLine}"`);
+    return false;
+  }
+  const applicantsCount = jobData.applicants?.found
+    ? parseInt(jobData.applicants.number, 10)
+    : null;
+
+  const peopleCount = jobData.people?.found
+    ? parseInt(jobData.people.number, 10)
+    : null;
+
+  const decision =
+    (applicantsCount !== null && applicantsCount < 100) ||
+    (peopleCount !== null && peopleCount < 100);
+
+  if (decision) {
+    const reason =
+      applicantsCount !== null && applicantsCount < 100
+        ? `✅ Applying: applicants < 100 (${applicantsCount})`
+        : `✅ Applying: people < 100 (${peopleCount})`;
+    console.log(reason);
+  } else {
+    console.log("❌ Skipping: too many applicants or data not found.");
   }
 
-  await moveWithEscapeCheck(result.x, result.y, "");
-  if (attempt === 1) {
-    console.log("Retrying once after successful find...");
-    return findSaveButton(jobPostScreen, attempt + 1, maxAttempts);
-  }
-  return result;
+  return decision;
 };
 
 const runBot = async () => {
   const jobPostScreen = "screenshots/jobPost.png";
-  const screenshotRegion = [80, 100, 700, 250];
+  const screenshotRegion = [80, 100, 700, 270];
   try {
     await execPromise(`"${screenshotPath}" linkedInScreen`);
     const linkedInScreenshot = "screenshots/linkedInScreen.png";
@@ -165,22 +209,26 @@ const runBot = async () => {
       await findSaveButton(jobPostScreen);
 
       await execPromise(
-        `"${screenshotPath}" topJobPost ${start} ${end} ${screenshotRegion.join(" ")}`
+        `"${screenshotPath}" topJobPost ${start} ${end} ${screenshotRegion.join(
+          " "
+        )}`
       );
       const jobDataRaw = await execPromise(
-        `"${findTextImagePath}" screenshots/topJobPost.png applicants hours people minutes`
+        `"${findTextImagePath}" screenshots/topJobPost.png applicants hours people minutes hour`
       );
       const jobData = JSON.parse(jobDataRaw.stdout.trim());
-      console.log("Extracted job data:", jobData);
-      const aboutButton = await findButton(jobPostScreen, "find-about");
-      await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart, "");
-
-      await execPromise(`"${highlightPath}" ${menuButton.x} 30 -120`).catch(
-        (err) => {
-          console.error("Highlight failed:", err.stderr || err.message);
-        }
-      );
-      await execPromise(`"${dumpClipBoardPath}"`);
+      const apply = shouldApply(jobData);
+      console.log("should i apply:", apply);
+      if (apply) {
+        const aboutButton = await findButton(jobPostScreen, "find-about");
+        await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart, "");
+        await execPromise(`"${highlightPath}" ${menuButton.x} 30 -120`).catch(
+          (err) => {
+            console.error("Highlight failed:", err.stderr || err.message);
+          }
+        );
+        await execPromise(`"${dumpClipBoardPath}"`);
+      }
     }
 
     console.log("All points completed.");

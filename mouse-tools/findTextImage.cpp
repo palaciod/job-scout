@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     cv::Mat gray;
     cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
     cv::resize(gray, gray, cv::Size(), 1.5, 1.5, cv::INTER_LINEAR);
-    gray.convertTo(gray, -1, 1.3, 0); // contrast boost (fast and helps thin fonts)
+    gray.convertTo(gray, -1, 1.3, 0); // contrast boost
 
     Pix* image = mat8ToPix(gray);
     if (!image) {
@@ -74,10 +74,11 @@ int main(int argc, char* argv[]) {
     tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
     if (api->Init(NULL, "eng", tesseract::OEM_LSTM_ONLY)) {
         std::cerr << "Could not initialize tesseract.\n";
+        delete api;
         return 1;
     }
 
-    api->SetPageSegMode(tesseract::PSM_AUTO); // Use AUTO segmentation (change to PSM_SPARSE_TEXT if preferred)
+    api->SetPageSegMode(tesseract::PSM_AUTO);
     api->SetVariable("preserve_interword_spaces", "1");
     api->SetImage(image);
     api->Recognize(0);
@@ -109,19 +110,23 @@ int main(int argc, char* argv[]) {
         } while (it->Next(tesseract::RIL_TEXTLINE));
     }
 
+    std::string firstLineText  = lines.size() >= 1 ? lines[0].text : "";
+    std::string secondLineText = lines.size() >= 2 ? lines[1].text : "";
+
     std::cout << "{\n";
     bool anyMatchFound = false;
 
     for (int i = 2; i < argc; ++i) {
         std::string searchWord = argv[i];
+        std::string searchWordLower = toLower(searchWord);
         bool matchFound = false;
 
         for (const auto& line : lines) {
-            if (toLower(line.text).find(toLower(searchWord)) != std::string::npos) {
+            if (toLower(line.text).find(searchWordLower) != std::string::npos) {
                 const OCRWord* matchedWord = nullptr;
 
                 for (const auto& word : line.words) {
-                    if (toLower(word.text).find(toLower(searchWord)) != std::string::npos) {
+                    if (toLower(word.text).find(searchWordLower) != std::string::npos) {
                         matchedWord = &word;
                         break;
                     }
@@ -141,15 +146,15 @@ int main(int argc, char* argv[]) {
                     std::sregex_iterator numbersEnd;
 
                     size_t bestPos = std::string::npos;
-                    size_t wordPos = line.text.find(searchWord);
+                    size_t wordPos = toLower(line.text).find(searchWordLower);
 
-                    for (auto it = numbersBegin; it != numbersEnd; ++it) {
-                        size_t numberPos = line.text.find(it->str());
+                    for (auto regexIt = numbersBegin; regexIt != numbersEnd; ++regexIt) {
+                        size_t numberPos = line.text.find(regexIt->str());
                         if (numberPos != std::string::npos) {
                             size_t distance = std::abs((int)(numberPos - wordPos));
                             if (bestPos == std::string::npos || distance < std::abs((int)(bestPos - wordPos))) {
                                 bestPos = numberPos;
-                                bestNumber = it->str();
+                                bestNumber = regexIt->str();
                             }
                         }
                     }
@@ -171,9 +176,11 @@ int main(int argc, char* argv[]) {
         }
 
         if (i < argc - 1) std::cout << ",\n";
-        else std::cout << "\n";
+        else std::cout << ",\n";
     }
 
+    std::cout << "  \"firstLine\": \"" << escapeQuotes(firstLineText) << "\",\n";
+    std::cout << "  \"secondLine\": \"" << escapeQuotes(secondLineText) << "\"\n";
     std::cout << "}\n";
 
     if (!anyMatchFound) {
