@@ -1,16 +1,29 @@
 #include <windows.h>
 #include <iostream>
+#include <cstdlib>
 
-int main() {
+int main(int argc, char* argv[]) {
     SetProcessDPIAware();
 
-    // Scroll direction: positive = up, negative = down
-    int scrollAmount = -45;
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <scrollAmount>\n";
+        std::cerr << "Example: " << argv[0] << " -120 (scroll down)\n";
+        return 1;
+    }
 
-    // Perform the scroll
-    mouse_event(MOUSEEVENTF_WHEEL, 0, 0, scrollAmount, 0);
+    int scrollAmount = std::atoi(argv[1]); 
+    INPUT input = {0};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+    input.mi.mouseData = scrollAmount;
+
+    UINT sent = SendInput(1, &input, sizeof(INPUT));
+
+    if (sent == 0) {
+        std::cerr << "SendInput failed with error: " << GetLastError() << std::endl;
+        return 1;
+    }
 
     std::cout << "Scrolled vertically by " << scrollAmount << " units." << std::endl;
-
     return 0;
 }

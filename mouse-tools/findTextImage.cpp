@@ -48,8 +48,8 @@ int main(int argc, char* argv[]) {
     SetProcessDPIAware();
     _putenv("TESSDATA_PREFIX=C:\\msys64\\ucrt64\\share\\tessdata\\");
 
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <imagePath> <word1> <word2> ...\n";
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <imagePath> [word1] [word2] ...\n";
         return 1;
     }
 
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     cv::Mat gray;
     cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
     cv::resize(gray, gray, cv::Size(), 1.5, 1.5, cv::INTER_LINEAR);
-    gray.convertTo(gray, -1, 1.3, 0); // contrast boost
+    gray.convertTo(gray, -1, 1.3, 0);
 
     Pix* image = mat8ToPix(gray);
     if (!image) {
@@ -108,6 +108,30 @@ int main(int argc, char* argv[]) {
 
             lines.push_back(line);
         } while (it->Next(tesseract::RIL_TEXTLINE));
+    }
+    if (argc == 2) {
+        std::cout << "{\n";
+        for (size_t i = 0; i < lines.size(); ++i) {
+            std::string key;
+            switch (i) {
+                case 0: key = "firstLine"; break;
+                case 1: key = "secondLine"; break;
+                case 2: key = "thirdLine"; break;
+                case 3: key = "fourthLine"; break;
+                case 4: key = "fifthLine"; break;
+                default: key = "line" + std::to_string(i + 1); break;
+            }
+
+            std::cout << "  \"" << key << "\": \"" << escapeQuotes(lines[i].text) << "\"";
+            if (i < lines.size() - 1) std::cout << ",\n";
+            else std::cout << "\n";
+        }
+        std::cout << "}\n";
+
+        api->End();
+        pixDestroy(&image);
+        delete api;
+        return 0;
     }
 
     std::string firstLineText  = lines.size() >= 1 ? lines[0].text : "";

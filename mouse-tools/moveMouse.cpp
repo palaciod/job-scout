@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
         int controlX = (startX + targetX) / 2 + rand() % 100 - 50;
         int controlY = (startY + targetY) / 2 - 200;
 
-        int steps = 100;
+        int steps = 50;
         int delayMs = 5;
 
         for (int i = 0; i <= steps; ++i) {

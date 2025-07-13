@@ -43,14 +43,16 @@ int main(int argc, char* argv[]) {
     bool findSave = (mode == "find-save");
     bool findAboutTheJob = (mode == "find-about");
     bool findMenu = (mode == "find-menu");
+    bool findNext = (mode == "find-next");
 
     cv::Mat screenshot = cv::imread(screenshotPath);
     cv::Mat templateImg = cv::imread("templates/job-post-exit.png");
     cv::Mat saveButtonTemplate = cv::imread("templates/save-button.png");
     cv::Mat aboutTheJobTemplate = cv::imread("templates/about-the-job.png");
     cv::Mat menuButtonTemplate = cv::imread("templates/menu-arrow.png");
+    cv::Mat nextButtonTemplate = cv::imread("templates/next-button.png");
 
-    if (screenshot.empty() || templateImg.empty() || saveButtonTemplate.empty() || aboutTheJobTemplate.empty()) {
+    if (screenshot.empty() || nextButtonTemplate.empty() || templateImg.empty() || saveButtonTemplate.empty() || aboutTheJobTemplate.empty()) {
         std::cout << (findSave || findAboutTheJob ? "{}" : "[]") << std::endl;
         return -1;
     }
@@ -70,7 +72,10 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Default case: find job post exit buttons
+    if (findNext) {
+        detectAndPrint(screenshot, nextButtonTemplate);
+        return 0;
+    }
     cv::Mat result;
     cv::matchTemplate(screenshot, templateImg, result, cv::TM_CCOEFF_NORMED);
 
