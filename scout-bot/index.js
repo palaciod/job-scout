@@ -155,7 +155,15 @@ const findSaveButton = async (
 const shouldApply = (jobData) => {
   console.log("Extracted job data:", jobData);
   const firstLine = jobData.firstLine?.trim();
-  const blocklist = ["Jobright.ai", "Wiraa", "Lensa", "hours", "United States", "people", "applicants"];
+  const blocklist = [
+    "Jobright.ai",
+    "Wiraa",
+    "Lensa",
+    "hours",
+    "United States",
+    "people",
+    "applicants",
+  ];
   if (
     firstLine &&
     blocklist.some((company) =>
@@ -178,7 +186,8 @@ const shouldApply = (jobData) => {
 
   const decision =
     (applicantsCount !== null && applicantsCount < 100) ||
-    (peopleCount !== null && peopleCount < 100 || personCount !== null);
+    (peopleCount !== null && peopleCount < 100) ||
+    personCount !== null;
 
   if (decision) {
     const reason =
@@ -193,6 +202,36 @@ const shouldApply = (jobData) => {
   return decision;
 };
 
+const getJobPointsWithRetry = async (maxAttempts = 10) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`📸 Capturing LinkedIn screen (Attempt ${attempt})`);
+      await execPromise(`"${screenshotPath}" linkedInScreen`);
+      const linkedInScreenshot = "screenshots/linkedInScreen.png";
+
+      const [pointsOutput, menuButtonOutput] = await Promise.all([
+        execPromise(`"${visualizerPath}" ${linkedInScreenshot}`),
+        execPromise(`"${visualizerPath}" ${linkedInScreenshot} find-menu`),
+      ]);
+
+      const points = JSON.parse(pointsOutput.stdout.trim());
+      const menuButton = JSON.parse(menuButtonOutput.stdout.trim());
+
+      if (Array.isArray(points) && points.length > 0) {
+        return { points, menuButton };
+      }
+
+      console.warn(`⚠️ No points found (Attempt ${attempt})`);
+    } catch (err) {
+      console.warn(`⚠️ Error in attempt ${attempt}:`, err.message);
+    }
+
+    await new Promise((res) => setTimeout(res, 200)); // Optional delay
+  }
+
+  throw new Error("❌ Failed to find any job points after multiple attempts.");
+};
+
 const runBot = async () => {
   const jobPostScreen = "screenshots/jobPost.png";
   // For the job title
@@ -202,16 +241,7 @@ const runBot = async () => {
   const jobTitleRegion = [100, 60, 900, 150];
   const screenshotRegion = [100, 180, 700, 150];
   try {
-    await execPromise(`"${screenshotPath}" linkedInScreen`);
-    const linkedInScreenshot = "screenshots/linkedInScreen.png";
-    const { stdout } = await execPromise(
-      `"${visualizerPath}" ${linkedInScreenshot}`
-    );
-    const menuButtonPoint = await execPromise(
-      `"${visualizerPath}" ${linkedInScreenshot} find-menu`
-    );
-    const menuButton = JSON.parse(menuButtonPoint.stdout.trim());
-    const points = JSON.parse(stdout.trim());
+    const { points, menuButton } = await getJobPointsWithRetry();
     let start;
     let end;
 
@@ -220,6 +250,7 @@ const runBot = async () => {
         start = 1086;
         end = 402;
       }
+      // probably should not have a magic 15 here. Need better picture for the exit button
       await moveWithEscapeCheck(x, y, "click");
       try {
         await findSaveButton(jobPostScreen);
@@ -233,7 +264,7 @@ const runBot = async () => {
           " "
         )}`
       );
-       const jobTitleRawData = await execPromise(
+      const jobTitleRawData = await execPromise(
         `"${findTextImagePath}" screenshots/topJobPostTitle.png`
       );
       await execPromise(
@@ -251,32 +282,38 @@ const runBot = async () => {
         const cleanedTitle = jobTitleRawData.stdout.trim();
         const firstBrace = cleaned.indexOf("{");
         const secondBrace = cleanedTitle.indexOf("{");
-        if (firstBrace === -1 || secondBrace) throw new Error("No JSON object found");
+        if (firstBrace === -1 || secondBrace)
+          throw new Error("No JSON object found");
         jobData = JSON.parse(cleaned.slice(firstBrace));
         titleData = JSON.parse(cleanedTitle.slice(secondBrace));
       } catch (err) {
-        console.warn("⚠️ Could not parse job data JSON. Skipping to next point.");
+        console.warn(
+          "⚠️ Could not parse job data JSON. Skipping to next point."
+        );
         console.warn("Raw stdout:", jobDataRaw.stdout);
         console.warn("Raw stdout:", jobTitleRawData.stdout);
         console.warn("Parse error:", err.message);
         continue;
       }
       jobData.firstLine = titleData?.firstLine;
-
-      console.log(jobData, "job data!");
       const apply = shouldApply(jobData);
       if (apply) {
         const aboutButton = await findButton(jobPostScreen, "find-about");
+        console.log(aboutButton, menuButton, "something weird here");
         await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart, "");
-        await execPromise(`"${highlightPath}" ${menuButton.x} 30 -120`).catch(
-          (err) => {
-            console.error("Highlight failed:", err.stderr || err.message);
-          }
-        );
+        await execPromise(
+          `"${highlightPath}" ${menuButton.x ?? 2022} 30 -120`
+        ).catch((err) => {
+          console.error("Highlight failed:", err.stderr || err.message);
+        });
         await execPromise(`"${dumpClipBoardPath}"`);
       }
     }
-    await moveWithEscapeCheck(points[points.length - 1]?.xStart, points[points.length - 1]?.yStart, "");
+    await moveWithEscapeCheck(
+      points[points.length - 1]?.xStart,
+      points[points.length - 1]?.yStart,
+      ""
+    );
     scrollDistance = points[0]?.yStart - points[points.length - 1]?.yStart;
     lastPoint = points[points.length - 1]?.yStart;
 
@@ -291,47 +328,54 @@ const searchJobBoard = async (retryCount = 0, maxRetries = 3) => {
   await execPromise(`"${screenshotPath}" finalPage`);
   const linkedInScreenshot = "screenshots/finalPage.png";
 
+  // Check if we've reached the end of the search results
   try {
+    const endOfSearchPoint = await execPromise(
+      `"${visualizerPath}" ${linkedInScreenshot} find-final-page`
+    );
+    const endOfSearchText = JSON.parse(endOfSearchPoint.stdout.trim());
+
+    if (endOfSearchText?.x) {
+      console.log("✅ Reached end of search. Halting.");
+      return;
+    }
+  } catch (parseError) {
+    console.log("🔁 End-of-search marker not found. Continuing...");
+  }
+
+  try {
+    console.log("<------------1-------------->");
     const nextButtonPoint = await execPromise(
       `"${visualizerPath}" ${linkedInScreenshot} find-next`
     );
-
     let nextButton;
+    console.log("<------------2-------------->", nextButtonPoint);
+
     try {
       nextButton = JSON.parse(nextButtonPoint.stdout.trim());
+      console.log("<------------3-------------->", nextButton);
     } catch (parseError) {
       console.error("Failed to parse next button output:", nextButtonPoint.stdout);
       throw parseError;
     }
 
-    if (!nextButton || Object.keys(nextButton).length === 0) {
-      console.log("Next button not found. Running bot again...");
-
-      const previousPoint = lastPoint; 
-      await runBot();            
-
-      if (lastPoint === previousPoint) {
-        if (retryCount >= maxRetries) {
-          throw new Error(
-            "❌ Next button not found and lastPoint hasn't changed after multiple retries."
-          );
-        }
-        console.log(
-          `🔁 lastPoint unchanged. Retry ${retryCount + 1} of ${maxRetries}...`
-        );
-        return searchJobBoard(retryCount + 1, maxRetries);
-      }
+    if (!nextButton || !nextButton.x || !nextButton.y) {
+      console.log("❌ Next button not found or invalid. Running bot again...");
+      const previousPoint = lastPoint;
+      await runBot();
+      console.log("<------------4-------------->", previousPoint);
       return searchJobBoard(0, maxRetries);
     }
 
     console.log("✅ Next button found:", nextButton);
+    await moveWithEscapeCheck(nextButton.x, nextButton.y, "click");
+
+    return searchJobBoard(0, maxRetries);
   } catch (error) {
     console.error("Error in searchJobBoard:", error);
     throw error;
   }
 };
-
-
 
 
 process.on("unhandledRejection", (reason) => {

@@ -44,15 +44,17 @@ int main(int argc, char* argv[]) {
     bool findAboutTheJob = (mode == "find-about");
     bool findMenu = (mode == "find-menu");
     bool findNext = (mode == "find-next");
+    bool findFinalPage = (mode == "find-final-page");
 
     cv::Mat screenshot = cv::imread(screenshotPath);
-    cv::Mat templateImg = cv::imread("templates/job-post-exit.png");
+    cv::Mat templateImg = cv::imread("templates/job-post-x.png");
     cv::Mat saveButtonTemplate = cv::imread("templates/save-button.png");
     cv::Mat aboutTheJobTemplate = cv::imread("templates/about-the-job.png");
     cv::Mat menuButtonTemplate = cv::imread("templates/menu-arrow.png");
     cv::Mat nextButtonTemplate = cv::imread("templates/next-button.png");
+    cv::Mat finalPageSearchTemplate = cv::imread("templates/final-page-search.png");
 
-    if (screenshot.empty() || nextButtonTemplate.empty() || templateImg.empty() || saveButtonTemplate.empty() || aboutTheJobTemplate.empty()) {
+    if (screenshot.empty() || finalPageSearchTemplate.empty() || nextButtonTemplate.empty() || templateImg.empty() || saveButtonTemplate.empty() || aboutTheJobTemplate.empty()) {
         std::cout << (findSave || findAboutTheJob ? "{}" : "[]") << std::endl;
         return -1;
     }
@@ -74,6 +76,10 @@ int main(int argc, char* argv[]) {
 
     if (findNext) {
         detectAndPrint(screenshot, nextButtonTemplate);
+        return 0;
+    }
+    if (findFinalPage){
+        detectAndPrint(screenshot, finalPageSearchTemplate);
         return 0;
     }
     cv::Mat result;
