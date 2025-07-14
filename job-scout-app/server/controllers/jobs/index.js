@@ -5,26 +5,44 @@ import path from "path";
 const router = express.Router();
 const LLM_API_URL = process.env.LLM_API;
 
-const systemPrompt = `You are a job fit evaluator. The candidate is a full stack developer with 4 years of experience in JavaScript, Python, Node.js, and AWS. Determine whether the candidate is a good fit for the job post. Respond only with "Yes" or "No", followed by a short explanation.`;
+const systemPrompt = `You are a job parsing and fit evaluation assistant. Given a job description, extract useful structured information and evaluate whether a candidate is a good fit.
 
-const matchLogPath = path.resolve("job-descriptions", "matches.json");
+The candidate has 4 years of experience as a full stack developer, with expertise in JavaScript, Python, Node.js, and AWS.
 
-const ensureJobDir = () => {
-  const dir = path.resolve("job-descriptions");
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-};
+Return a valid JSON object with the following fields:
+
+{
+  "title": string,
+  "company": string,
+  "technologies": string[],
+  "experienceLevel": string, // "Entry", "Mid", or "Senior"
+  "remote": boolean,
+  "summary": string, // brief 1-2 sentence summary of the job's core responsibilities
+  "applicantCount": number, // total number of applicants if listed
+  "entryLevelPercent": number, // % of entry-level applicants if listed
+  "seniorLevelPercent": number, // % of senior-level applicants if listed
+  "yearsRequired": number | undefined, // years of experience required by the job, or undefined if not mentioned
+  "fit": "Yes" | "No", // whether the candidate is a good fit
+  "reason": string // a short explanation of the fit result
+}
+
+If a field is unknown or not mentioned in the job post, set it to null. For yearsRequired, use undefined if not specified. Only return a valid JSON object. Do not include markdown formatting, explanations, or extra notes.`;
+
+function cleanJobText(text) {
+  return text.replace(/See how you compare to other applicants/i, "").trim();
+}
 
 router.post("/evaluate-job", async (req, res) => {
   if (!LLM_API_URL) {
     return res.status(500).json({ error: "LLM_API not set in environment." });
   }
 
-  const jobDescription = req.body?.text?.trim();
-  if (!jobDescription) {
+  const rawJobText = req.body?.text?.trim();
+  if (!rawJobText) {
     return res.status(400).json({ error: "Missing or invalid 'text' field." });
   }
+
+  const jobDescription = cleanJobText(rawJobText);
 
   try {
     const response = await fetch(LLM_API_URL, {
@@ -41,29 +59,60 @@ router.post("/evaluate-job", async (req, res) => {
     });
 
     const data = await response.json();
-    const resultText = data?.choices?.[0]?.message?.content?.trim() || "No response from model.";
+    const raw = data?.choices?.[0]?.message?.content?.trim();
+    console.log(data?.choices, "<---------->");
 
-    if (resultText.toLowerCase().startsWith("yes")) {
-      ensureJobDir();
-      let matches = [];
-      if (fs.existsSync(matchLogPath)) {
-        const content = fs.readFileSync(matchLogPath, "utf8");
-        matches = JSON.parse(content || "[]");
+    let parsed = null;
+
+    try {
+      const match = raw.match(/```(?:json)?\s*([\s\S]+?)\s*```/i);
+      let jsonText = match ? match[1] : raw;
+      const firstBrace = jsonText.indexOf("{");
+      const lastBrace = jsonText.lastIndexOf("}");
+      if (firstBrace === -1 || lastBrace === -1) {
+        throw new Error("Could not find JSON object in LLM response.");
       }
-      matches.push({
+
+      jsonText = jsonText.slice(firstBrace, lastBrace + 1);
+      jsonText = jsonText.replace(/\bundefined\b/g, "null");
+
+      parsed = JSON.parse(jsonText);
+      const dir = path.resolve("job-descriptions");
+      const logFile = path.join(dir, "parsed-jobs.json");
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      let existing = [];
+      if (fs.existsSync(logFile)) {
+        try {
+          const content = fs.readFileSync(logFile, "utf8");
+          existing = JSON.parse(content || "[]");
+        } catch (e) {
+          console.warn("⚠️ Could not parse existing parsed-jobs.json:", e);
+          existing = [];
+        }
+      }
+
+      existing.push({
         timestamp: new Date().toISOString(),
-        jobDescription,
-        llmResponse: resultText,
+        job: parsed,
       });
 
-      fs.writeFileSync(matchLogPath, JSON.stringify(matches, null, 2), "utf8");
-      console.log("✅ Match logged to matches.json");
+      fs.writeFileSync(logFile, JSON.stringify(existing, null, 2), "utf8");
+      console.log("✅ Saved to parsed-jobs.json");
+    } catch (err) {
+      console.error("❌ Failed to parse LLM JSON:", raw);
+      return res
+        .status(500)
+        .json({ error: "Invalid JSON returned by LLM.", raw });
     }
 
-    res.json({ result: resultText });
-  } catch (error) {
-    console.error("Error calling LLM API:", error);
-    res.status(500).json({ error: "Failed to evaluate job description." });
+    return res.json({ parsed });
+  } catch (err) {
+    console.error("❌ LLM API call failed:", err);
+    return res.status(500).json({ error: "LLM API call failed" });
   }
 });
 
