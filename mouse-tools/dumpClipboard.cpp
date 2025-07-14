@@ -51,7 +51,7 @@ std::string getClipboardText() {
 
 void postToAPI(const std::string& rawText) {
     std::wstring host = L"localhost";
-    std::wstring path = L"/jobs/dump-job";
+    std::wstring path = L"/jobs/evaluate-job";
 
     std::string escapedText = escapeJson(rawText);
     std::string json = "{\"text\":\"" + escapedText + "\"}";
