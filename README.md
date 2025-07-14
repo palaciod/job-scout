@@ -155,7 +155,8 @@ Each processed job is saved to `job-descriptions/parsed-jobs.json` with:
 ### Computer Vision
 - Uses OpenCV for template matching to find UI elements
 - Tesseract OCR for text extraction from job postings
-- Robust handling of different screen resolutions and layouts
+- **Note**: Screenshot-based detection is currently resolution-dependent and may require adjustments for different display setups
+- Robust handling of different screen resolutions and layouts (work in progress)
 
 ### Safety Features
 - Global escape key listener for immediate stop
@@ -176,6 +177,9 @@ Each processed job is saved to `job-descriptions/parsed-jobs.json` with:
 
 ## ⚠️ Important Notes
 
+- **Work in Progress**: This project is actively under development
+- **UI Under Construction**: A user interface is currently being built for easier interaction
+- **Resolution Dependency**: Screenshot-based UI element detection is not resolution agnostic - the system may need adjustments for different screen resolutions and display scaling
 - **LinkedIn ToS**: Be aware of LinkedIn's terms of service regarding automation
 - **Rate Limiting**: The bot includes delays to avoid overwhelming LinkedIn's servers  
 - **Manual Review**: Always manually review AI-recommended jobs before applying
@@ -203,3 +207,5 @@ This project is licensed under the ISC License.
 ---
 
 **Disclaimer**: This tool is for educational and personal use. Always respect website terms of service and use responsibly.
+
+**Current Status**: This project is a work in progress. UI elements detection may require calibration for your specific screen resolution and display scaling. A user interface is under construction to make the system more user-friendly.
