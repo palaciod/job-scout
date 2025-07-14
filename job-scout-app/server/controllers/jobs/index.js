@@ -4,7 +4,7 @@ import path from 'path';
 
 const router = express.Router();
 
-const LLM_API_URL = "http://127.0.0.1:1234/v1/chat/completions";
+const LLM_API_URL = process.env.LLM_API;
 
 const systemPrompt = `You are a job fit evaluator. The candidate is a full stack developer with 4 years of experience in JavaScript, Python, Node.js, and AWS. Determine whether the candidate is a good fit for the job post. Respond only with "Yes" or "No", followed by a short explanation.`;
 
@@ -26,6 +26,9 @@ router.post('/dump-job', (req, res) => {
 });
 
 router.post("/evaluate-job", async (req, res) => {
+  if (!LLM_API_URL) {
+  return res.status(500).json({ error: "LLM_API not set in environment.", mes: LLM_API_URL });
+}
   const jobDescription = req.body?.text;
 
   if (!jobDescription || typeof jobDescription !== "string") {
