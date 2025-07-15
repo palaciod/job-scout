@@ -1,4 +1,3 @@
-// contexts/ThemeContext.js
 import React, { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { getTheme } from "../theme/theme";
 

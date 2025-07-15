@@ -8,7 +8,14 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const profilePath = path.join(__dirname, "../data/profile.json");
+const profileDir = path.join(__dirname, "../../data/profile");
+const profilePath = path.join(profileDir, "profile.json");
+
+const ensureProfileDirExists = () => {
+  if (!fs.existsSync(profileDir)) {
+    fs.mkdirSync(profileDir, { recursive: true });
+  }
+};
 
 router.get("/", (req, res) => {
   if (!fs.existsSync(profilePath)) {
@@ -47,9 +54,42 @@ router.post("/theme", express.json(), (req, res) => {
   };
 
   try {
+    ensureProfileDirExists();
     fs.writeFileSync(profilePath, JSON.stringify(updatedProfile, null, 2), "utf-8");
     return res.status(200).json({ message: "Profile updated successfully", profile: updatedProfile });
   } catch (err) {
+    return res.status(500).json({ error: "Failed to save profile" });
+  }
+});
+
+router.post("/", express.json(), (req, res) => {
+  const updates = req.body;
+
+  if (typeof updates !== "object" || Array.isArray(updates) || updates === null) {
+    return res.status(400).json({ error: "Invalid JSON payload" });
+  }
+
+  let existingProfile = {};
+  if (fs.existsSync(profilePath)) {
+    try {
+      const fileContent = fs.readFileSync(profilePath, "utf-8");
+      existingProfile = JSON.parse(fileContent);
+    } catch (err) {
+      return res.status(500).json({ error: "Failed to read existing profile" });
+    }
+  }
+
+  const updatedProfile = {
+    ...existingProfile,
+    ...updates,
+  };
+
+  try {
+    ensureProfileDirExists();
+    fs.writeFileSync(profilePath, JSON.stringify(updatedProfile, null, 2), "utf-8");
+    return res.status(200).json({ message: "Profile updated", profile: updatedProfile });
+  } catch (err) {
+    console.log(err, "error from posting to profile");
     return res.status(500).json({ error: "Failed to save profile" });
   }
 });

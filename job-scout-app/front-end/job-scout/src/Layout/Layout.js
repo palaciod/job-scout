@@ -19,7 +19,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import BlockIcon from "@mui/icons-material/Block";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { useDrawer } from "../contexts/DrawerContext";
-import { useThemeMode } from "../contexts/ThemeContext";
+import { useProfile } from "../contexts/ProfileContext";
 
 const drawerItems1 = [
   { text: "Home", icon: <HomeIcon />, route: "/" },
@@ -41,7 +41,7 @@ const drawerItems2 = [
 
 const Layout = ({ children }) => {
   const { open, closeDrawer } = useDrawer();
-  const { toggleTheme } = useThemeMode();
+  const { toggleTheme } = useProfile();
 
   const renderDrawerItems = (items) =>
     items.map(({ text, icon, route }) => {
