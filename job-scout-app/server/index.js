@@ -3,6 +3,8 @@ dotenv.config();
 import express from 'express';
 import cors from "cors";
 import Jobs from "./controllers/jobs/index.js";
+import Resume from "./controllers/resume/index.js";
+import Profile from "./controllers/profile/index.js";
 
 
 const port = 3000;
@@ -12,6 +14,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/jobs', Jobs);
+app.use('/resume', Resume);
+app.use('/profile', Profile);
+
 
 app.get('/', (req, res) => {
     console.log('i ran');

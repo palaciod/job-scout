@@ -3,25 +3,25 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import { BrowserRouter as Router } from "react-router-dom";
 import { DrawerProvider } from "./DrawerContext";
 import { JobDataProvider } from "./JobDataContext";
-import { getTheme } from "../theme/theme";
+import { ThemeModeProvider } from "./ThemeContext";
+import { ResumeProvider } from "./ResumeContext";
 
 const ContextWrapper = ({ children }) => {
-  const prefersDarkMode = window.matchMedia(
-    "(prefers-color-scheme: dark)"
-  ).matches;
-  const theme = getTheme(prefersDarkMode ? "dark" : "light");
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <DrawerProvider>
-          <JobDataProvider>
-            {children}
-          </JobDataProvider>
-        </DrawerProvider>
-      </Router>
-    </ThemeProvider>
+    <ThemeModeProvider>
+      {(theme) => (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Router>
+            <DrawerProvider>
+              <ResumeProvider>
+                <JobDataProvider>{children}</JobDataProvider>
+              </ResumeProvider>
+            </DrawerProvider>
+          </Router>
+        </ThemeProvider>
+      )}
+    </ThemeModeProvider>
   );
 };
 

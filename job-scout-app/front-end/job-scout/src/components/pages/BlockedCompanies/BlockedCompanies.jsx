@@ -2,11 +2,14 @@ import React from "react";
 import { Container, Typography, Box } from "@mui/material";
 import BlockedList from "../../organisms/BlockedList/BlockedList";
 import DrawerButton from "../../atoms/DrawerButton";
+import styles from "./BlockedCompanies.module.css";
 
 const BlockedCompanies = () => {
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
-      <DrawerButton />
+      <div className={styles?.drawerButton}>
+        <DrawerButton />
+      </div>
       <Box textAlign="center" mb={4}>
         <Typography variant="h4" component="h1" gutterBottom>
           Manage Blocked Companies

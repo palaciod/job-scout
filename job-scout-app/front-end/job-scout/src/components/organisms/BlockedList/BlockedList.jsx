@@ -21,7 +21,7 @@ const BlockedList = () => {
     <Box>
       <Box display="flex" gap={1} mb={2}>
         <TextField
-          label="Add Tag"
+          label="Add Company"
           variant="outlined"
           size="small"
           fullWidth

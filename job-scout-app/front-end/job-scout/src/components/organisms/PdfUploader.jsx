@@ -9,17 +9,39 @@ import {
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { useResume } from "../../contexts/ResumeContext";
 
 const PdfUploader = ({ onFileSelect }) => {
   const [pdfFile, setPdfFile] = useState(null);
+  const { updateResumeText } = useResume();
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files[0];
-    if (file && file.type === "application/pdf") {
-      setPdfFile(file);
-      onFileSelect?.(file);
-    } else {
+    if (!file || file.type !== "application/pdf") {
       alert("Please upload a valid PDF file.");
+      return;
+    }
+
+    setPdfFile(file);
+    onFileSelect?.(file);
+
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    try {
+      const response = await fetch("http://localhost:3000/resume/upload-pdf", {
+        method: "POST",
+        body: formData,
+      });
+      if (response?.status >= 300) {
+        throw new Error('Failed to post resume');
+      }
+      const result = await response.json();
+      updateResumeText(result?.text);
+      console.log("Parsed PDF saved:", result);
+
+    } catch (error) {
+      console.error("Error uploading PDF:", error);
     }
   };
 
@@ -35,7 +57,6 @@ const PdfUploader = ({ onFileSelect }) => {
         p: 3,
         border: "2px dashed #90caf9",
         borderRadius: 4,
-        backgroundColor: "#1a1c22",
         position: "relative",
       }}
     >

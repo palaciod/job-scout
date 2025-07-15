@@ -1,12 +1,25 @@
 import "./App.css";
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import JobBoard from "./components/pages/JobBoard/JobBoard";
 import NotFoundPage from "./components/pages/NotFound/NotFound";
 import Layout from "./Layout/Layout";
 import ContextWrapper from "./contexts/ContextWrapper";
 import UploadPage from "./components/pages/UploadPage/UploadPage";
 import BlockedCompanies from "./components/pages/BlockedCompanies/BlockedCompanies";
+import { useResume } from "./contexts/ResumeContext";
+
+const ProtectedRoute = ({ children }) => {
+  const { resumeText, loading } = useResume();
+
+  if (loading) return null;
+
+  if (!resumeText) {
+    return <Navigate to="/upload-resume" replace />;
+  }
+
+  return children;
+};
 
 const App = () => {
   return (
@@ -15,17 +28,21 @@ const App = () => {
         <Route
           path="/"
           element={
-            <Layout>
-              <JobBoard />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <JobBoard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/job-board"
           element={
-            <Layout>
-              <JobBoard />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <JobBoard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -39,17 +56,21 @@ const App = () => {
         <Route
           path="/blocked-companies"
           element={
-            <Layout>
-              <BlockedCompanies />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <BlockedCompanies />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/job/:id"
           element={
-            <Layout>
-              <JobBoard />
-            </Layout>
+            <ProtectedRoute>
+              <Layout>
+                <JobBoard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
         <Route path="*" element={<NotFoundPage />} />

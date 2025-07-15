@@ -39,12 +39,12 @@ const ToolBar = ({
     <>
       <AppBar
         position="static"
-        sx={{ backgroundColor: "#1e1e1e", boxShadow: 0, ...sx }}
+        sx={{ boxShadow: 0, ...sx }}
         className={className}
       >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <DrawerButton />
-          <Typography variant="h6" color="white">
+          <Typography variant="h6" >
             {title}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

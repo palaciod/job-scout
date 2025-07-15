@@ -139,5 +139,47 @@ router.get("/", (req, res) => {
   }
 });
 
+router.post("/jobs/update-applied", async (req, res) => {
+  const { url, applied } = req.body;
+
+  if (typeof url !== "string" || typeof applied !== "boolean") {
+    return res.status(400).json({ error: "Missing or invalid 'url' or 'applied' field." });
+  }
+
+  const logFile = path.resolve("job-descriptions", "parsed-jobs.json");
+
+  if (!fs.existsSync(logFile)) {
+    return res.status(404).json({ error: "No jobs file found." });
+  }
+
+  try {
+    const content = fs.readFileSync(logFile, "utf8");
+    const jobs = JSON.parse(content || "[]");
+
+    let updated = false;
+
+    const updatedJobs = jobs.map((jobEntry) => {
+      if (jobEntry.url === url) {
+        jobEntry.applied = applied;
+        updated = true;
+      }
+      return jobEntry;
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: "Job with given URL not found." });
+    }
+
+    fs.writeFileSync(logFile, JSON.stringify(updatedJobs, null, 2), "utf8");
+    console.log(`✅ Updated 'applied' status for URL: ${url}`);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Failed to update applied status:", err);
+    return res.status(500).json({ error: "Failed to update applied status." });
+  }
+});
+
+
 
 export default router;

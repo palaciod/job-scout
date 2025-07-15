@@ -10,10 +10,8 @@ const DrawerButton = () => {
       onClick={openDrawer}
       sx={{
         position: "relative",
-        color: "#fff",
         p: 1,
         "&:hover": {
-          backgroundColor: "#3d3d3d",
         },
       }}
     >
