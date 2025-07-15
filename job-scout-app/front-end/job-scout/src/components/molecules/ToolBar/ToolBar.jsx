@@ -14,6 +14,7 @@ import GetAppIcon from "@mui/icons-material/GetApp";
 import DrawerButton from "../../atoms/DrawerButton";
 import FilterPopover from "../../atoms/FilterPopover";
 import SearchButton from "../../atoms/SearchButton";
+import { useJobData } from "../../../contexts/JobDataContext";
 
 const ToolBar = ({
   title = "Toolbar",
@@ -24,6 +25,7 @@ const ToolBar = ({
 }) => {
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const isFilterOpen = Boolean(filterAnchorEl);
+  const { applySearch } = useJobData();
 
   const handleFilterClick = (event) => {
     setFilterAnchorEl(event.currentTarget);
@@ -60,7 +62,7 @@ const ToolBar = ({
             <IconButton color="inherit">
               <GetAppIcon />
             </IconButton>
-            <SearchButton onSearch={(query) => console.log("Search:", query)} />
+            <SearchButton onSearch={(query) => applySearch(query)} />
           </Box>
         </Toolbar>
       </AppBar>

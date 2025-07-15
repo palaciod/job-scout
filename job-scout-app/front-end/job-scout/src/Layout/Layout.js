@@ -9,12 +9,29 @@ import {
   ListItemText,
   Divider,
 } from "@mui/material";
-import InboxIcon from "@mui/icons-material/MoveToInbox";
-import MailIcon from "@mui/icons-material/Mail";
+import ArticleIcon from "@mui/icons-material/Article";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import DeleteIcon from "@mui/icons-material/Delete";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import HomeIcon from '@mui/icons-material/Home';
+import BlockIcon from "@mui/icons-material/Block";
+import SettingsIcon from "@mui/icons-material/Settings";
 import { useDrawer } from "../contexts/DrawerContext";
 
-const drawerItems1 = ["Inbox", "Starred", "Send email", "Drafts"];
-const drawerItems2 = ["All mail", "Trash", "Spam"];
+const drawerItems1 = [
+    { text: "Home", icon: <HomeIcon /> },
+  { text: "Applied", icon: <ArticleIcon /> },
+  { text: "Upload Resume", icon: <UploadFileIcon /> },
+  { text: "Blocked Companies", icon: <BlockIcon /> },
+  { text: "Trash", icon: <DeleteIcon /> },
+];
+
+const drawerItems2 = [
+  { text: "Light/Dark", icon: <DarkModeIcon /> },
+  { text: "Delete All", icon: <DeleteSweepIcon /> },
+  { text: "Settings", icon: <SettingsIcon /> },
+];
 
 const Layout = ({ children }) => {
   const { open, closeDrawer } = useDrawer();
@@ -22,12 +39,10 @@ const Layout = ({ children }) => {
   const drawerContent = (
     <Box sx={{ width: 250 }} role="presentation" onClick={closeDrawer}>
       <List>
-        {drawerItems1.map((text, index) => (
+        {drawerItems1.map(({ text, icon }) => (
           <ListItem key={text} disablePadding>
             <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
+              <ListItemIcon>{icon}</ListItemIcon>
               <ListItemText primary={text} />
             </ListItemButton>
           </ListItem>
@@ -35,12 +50,10 @@ const Layout = ({ children }) => {
       </List>
       <Divider />
       <List>
-        {drawerItems2.map((text, index) => (
+        {drawerItems2.map(({ text, icon }) => (
           <ListItem key={text} disablePadding>
             <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
+              <ListItemIcon>{icon}</ListItemIcon>
               <ListItemText primary={text} />
             </ListItemButton>
           </ListItem>
@@ -54,8 +67,6 @@ const Layout = ({ children }) => {
       <Drawer open={open} onClose={closeDrawer}>
         {drawerContent}
       </Drawer>
-
-      {/* Main content */}
       <Box component="main" sx={{ p: 3, mt: 6 }}>
         {children}
       </Box>

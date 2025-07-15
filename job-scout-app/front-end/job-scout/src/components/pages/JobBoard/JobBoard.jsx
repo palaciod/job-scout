@@ -7,7 +7,11 @@ import { Box, CircularProgress, Typography, Container } from "@mui/material";
 
 const JobBoard = () => {
   const [viewMode, setViewMode] = useState("grid");
-  const { jobs, loading, error } = useJobData();
+  const { jobs, filteredJobs, loading, error } = useJobData();
+
+  const getJobs = () => {
+    return filteredJobs?.length === 0 ? jobs : filteredJobs;
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 1 }}>
@@ -32,11 +36,34 @@ const JobBoard = () => {
         </Typography>
       )}
 
-      {!loading && !error && jobs.length === 0 && (
-        <Typography sx={{ mt: 2 }}>No jobs found.</Typography>
+      {!loading && !error && getJobs().length === 0 && (
+        <Box
+          sx={{
+            mt: 4,
+            textAlign: "center",
+            color: "#aaa",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Box sx={{ fontSize: 48 }}>🔍</Box>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            No jobs match your search
+          </Typography>
+          <Typography variant="body2">
+            Try adjusting your filters or clearing your search.
+          </Typography>
+        </Box>
       )}
-      <div className={`${styles.jobList} ${viewMode === "grid" ? styles.gridView : styles.listView}`}>
-        {jobs.map((entry, index) => (
+
+      <div
+        className={`${styles.jobList} ${
+          viewMode === "grid" ? styles.gridView : styles.listView
+        }`}
+      >
+        {getJobs().map((entry, index) => (
           <Card
             job={{
               url: entry.url,

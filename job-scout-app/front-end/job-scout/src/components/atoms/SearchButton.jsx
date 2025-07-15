@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, IconButton, InputBase } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 
 const SearchButton = ({ onSearch }) => {
   const [expanded, setExpanded] = useState(false);
@@ -15,6 +16,12 @@ const SearchButton = ({ onSearch }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (onSearch) onSearch(query);
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    onSearch?.("");
+    setExpanded(false);
   };
 
   return (
@@ -34,7 +41,6 @@ const SearchButton = ({ onSearch }) => {
             borderRadius: 2,
             px: 1,
             width: { xs: "100%", sm: 250 },
-            transition: "width 0.3s ease",
             backgroundColor: "#1e1e1e",
           }}
         >
@@ -47,6 +53,15 @@ const SearchButton = ({ onSearch }) => {
             placeholder="Search..."
             sx={{ color: "#fff", flex: 1 }}
           />
+          {query && (
+            <IconButton
+              onClick={handleClear}
+              size="small"
+              sx={{ color: "#ccc", ml: 1 }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )}
     </Box>
