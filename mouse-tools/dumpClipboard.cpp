@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <iomanip>
+#include <vector>
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -19,7 +21,9 @@ std::string escapeJson(const std::string& input) {
             case '\t': ss << "\\t"; break;
             default:
                 if ('\x00' <= c && c <= '\x1f') {
-                    ss << "\\u" << std::hex << std::uppercase << (int)c;
+                    ss << "\\u"
+                       << std::setw(4) << std::setfill('0')
+                       << std::hex << std::uppercase << (int)c;
                 } else {
                     ss << c;
                 }
@@ -49,12 +53,19 @@ std::string getClipboardText() {
     return text;
 }
 
-void postToAPI(const std::string& rawText) {
+void postToAPI(const std::string& url) {
     std::wstring host = L"localhost";
     std::wstring path = L"/jobs/evaluate-job";
 
-    std::string escapedText = escapeJson(rawText);
-    std::string json = "{\"text\":\"" + escapedText + "\"}";
+    std::string text = getClipboardText();
+
+    std::string escapedText = text.empty() ? "null" : ("\"" + escapeJson(text) + "\"");
+    std::string escapedUrl  = url.empty()  ? "null" : ("\"" + escapeJson(url) + "\"");
+
+    std::string json = "{"
+        "\"text\": " + escapedText + ", "
+        "\"url\": " + escapedUrl +
+    "}";
 
     HINTERNET hSession = WinHttpOpen(L"ClipboardUploader/1.0",
         WINHTTP_ACCESS_TYPE_NO_PROXY,
@@ -96,10 +107,21 @@ void postToAPI(const std::string& rawText) {
         0);
 
     if (!bResults) {
-        std::cerr << "Failed to send HTTP request.\n";
+        std::cerr << "Failed to send HTTP request. Error: " << GetLastError() << "\n";
     } else {
         WinHttpReceiveResponse(hRequest, NULL);
-        std::cout << "Clipboard data sent to API.\n";
+        std::cout << "Request sent successfully.\n";
+
+        DWORD dwSize = 0;
+        WinHttpQueryDataAvailable(hRequest, &dwSize);
+        if (dwSize > 0) {
+            std::vector<char> buffer(dwSize + 1);
+            ZeroMemory(buffer.data(), buffer.size());
+
+            DWORD dwDownloaded = 0;
+            WinHttpReadData(hRequest, buffer.data(), dwSize, &dwDownloaded);
+            std::cout << "Response: " << buffer.data() << "\n";
+        }
     }
 
     WinHttpCloseHandle(hRequest);
@@ -107,13 +129,8 @@ void postToAPI(const std::string& rawText) {
     WinHttpCloseHandle(hSession);
 }
 
-int main() {
-    std::string text = getClipboardText();
-    if (text.empty()) {
-        std::cerr << "No text found in clipboard.\n";
-        return 1;
-    }
-
-    postToAPI(text);
+int main(int argc, char* argv[]) {
+    std::string url = (argc >= 2) ? argv[1] : "";
+    postToAPI(url);
     return 0;
 }

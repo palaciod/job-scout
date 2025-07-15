@@ -7,7 +7,7 @@ const LLM_API_URL = process.env.LLM_API;
 
 const systemPrompt = `You are a job parsing and fit evaluation assistant. Given a job description, extract useful structured information and evaluate whether a candidate is a good fit.
 
-The candidate has 4 years of experience as a full stack developer, with expertise in JavaScript, Python, Node.js, and AWS.
+The candidate has over 5 years of experience as a full stack developer, with expertise in JavaScript, Python, Node.js, and AWS.
 
 Return a valid JSON object with the following fields:
 
@@ -97,6 +97,7 @@ router.post("/evaluate-job", async (req, res) => {
 
       existing.push({
         timestamp: new Date().toISOString(),
+        url: req.body?.url ?? null,
         job: parsed,
       });
 
@@ -115,5 +116,28 @@ router.post("/evaluate-job", async (req, res) => {
     return res.status(500).json({ error: "LLM API call failed" });
   }
 });
+
+router.get("/", (req, res) => {
+  const logFile = path.resolve("job-descriptions", "parsed-jobs.json");
+
+  if (!fs.existsSync(logFile)) {
+    return res.status(404).json({ message: "No jobs found." });
+  }
+
+  try {
+    const content = fs.readFileSync(logFile, "utf8");
+    const jobs = JSON.parse(content || "[]");
+
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      return res.status(404).json({ message: "No jobs found." });
+    }
+
+    return res.json({ jobs });
+  } catch (err) {
+    console.error("❌ Failed to read parsed-jobs.json:", err);
+    return res.status(500).json({ error: "Failed to read jobs file." });
+  }
+});
+
 
 export default router;

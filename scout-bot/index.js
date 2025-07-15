@@ -70,22 +70,25 @@ const runEscapeListener = () => {
   escapeProcess.unref();
 };
 
-const moveWithEscapeCheck = (x, y, shouldClick) => {
+const moveWithEscapeCheck = (x, y, action) => {
   return new Promise((resolve, reject) => {
-    const moveProcess = spawn(
-      moveMousePath,
-      [`${x}`, `${y}`, `${shouldClick}`],
-      { cwd: mouseToolsPath }
-    );
+    let outputData = "";
+
+    const args = [`${x}`, `${y}`];
+    if (action === "click" || action === "copy") args.push(action);
+
+    const moveProcess = spawn(moveMousePath, args, { cwd: mouseToolsPath });
 
     moveProcess.stdout.on("data", (data) => {
-      const output = data.toString().trim();
-      console.log(output);
+      const output = data.toString();
+      outputData += output;
 
       if (output.includes("Escape key pressed")) {
         console.log("Detected Escape during movement. Stopping bot.");
         process.exit(0);
       }
+
+      console.log(output.trim());
     });
 
     moveProcess.stderr.on("data", (data) => {
@@ -93,7 +96,12 @@ const moveWithEscapeCheck = (x, y, shouldClick) => {
     });
 
     moveProcess.on("close", () => {
-      resolve();
+      try {
+        const json = JSON.parse(outputData);
+        resolve(json);
+      } catch {
+        resolve();
+      }
     });
   });
 };
@@ -144,10 +152,11 @@ const findSaveButton = async (
     return findSaveButton(jobPostScreen, attempt + 1, maxAttempts, false);
   }
   if (!hasRetriedAfterFind) {
-    console.log("Button found — retrying once more to confirm...");
+    console.log("Save Button found — retrying once more to confirm...");
     return findSaveButton(jobPostScreen, attempt + 1, maxAttempts, true);
   }
-  await moveWithEscapeCheck(result.x, result.y, "");
+  await moveWithEscapeCheck(result.x, result.y);
+  console.log(result, "<----------->");
   await execPromise(`"${scrollPath}" 100`);
   return result;
 };
@@ -232,6 +241,14 @@ const getJobPointsWithRetry = async (maxAttempts = 10) => {
   throw new Error("❌ Failed to find any job points after multiple attempts.");
 };
 
+const scrollToTopAndGrabLink = async () => {
+  // Scrolling value technically doesn't matter, we just need to scroll high enough to reach the top again
+  await execPromise(`"${scrollPath}" 5000`);
+  const url = await moveWithEscapeCheck(1270, 408, "copy");
+  console.log(url, "<------------------------>");
+  return url;
+};
+
 const runBot = async () => {
   const jobPostScreen = "screenshots/jobPost.png";
   // For the job title
@@ -250,7 +267,6 @@ const runBot = async () => {
         start = 1086;
         end = 402;
       }
-      // probably should not have a magic 15 here. Need better picture for the exit button
       await moveWithEscapeCheck(x, y, "click");
       try {
         await findSaveButton(jobPostScreen);
@@ -298,21 +314,34 @@ const runBot = async () => {
       jobData.firstLine = titleData?.firstLine;
       const apply = shouldApply(jobData);
       if (apply) {
+        const result = await scrollToTopAndGrabLink();
+        const jobUrl = typeof result === "string" ? result : result?.jobUrl;
+
+        if (!jobUrl) {
+          console.error("❌ No job URL found.");
+          return;
+        }
+
         const aboutButton = await findButton(jobPostScreen, "find-about");
         console.log(aboutButton, menuButton, "something weird here");
-        await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart, "");
+
+        await moveWithEscapeCheck(aboutButton.xStart, aboutButton.yStart);
+
         await execPromise(
           `"${highlightPath}" ${menuButton.x ?? 2022} 30 -120`
         ).catch((err) => {
           console.error("Highlight failed:", err.stderr || err.message);
         });
-        await execPromise(`"${dumpClipBoardPath}"`);
+
+        const command = `"${dumpClipBoardPath}" "${jobUrl}"`;
+        console.log("Running:", command);
+
+        await execPromise(command);
       }
     }
     await moveWithEscapeCheck(
       points[points.length - 1]?.xStart,
-      points[points.length - 1]?.yStart,
-      ""
+      points[points.length - 1]?.yStart
     );
     scrollDistance = points[0]?.yStart - points[points.length - 1]?.yStart;
     lastPoint = points[points.length - 1]?.yStart;
@@ -355,7 +384,10 @@ const searchJobBoard = async (retryCount = 0, maxRetries = 3) => {
       nextButton = JSON.parse(nextButtonPoint.stdout.trim());
       console.log("<------------3-------------->", nextButton);
     } catch (parseError) {
-      console.error("Failed to parse next button output:", nextButtonPoint.stdout);
+      console.error(
+        "Failed to parse next button output:",
+        nextButtonPoint.stdout
+      );
       throw parseError;
     }
 
@@ -376,7 +408,6 @@ const searchJobBoard = async (retryCount = 0, maxRetries = 3) => {
     throw error;
   }
 };
-
 
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled Rejection:", reason);
