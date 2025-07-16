@@ -1,4 +1,5 @@
 # Job Scout 🕵️‍♂️
+<img width="1273" height="663" alt="job-scout-1" src="https://github.com/user-attachments/assets/67901344-532d-4a3f-a544-d60f04bf4325" />
 
 
 ![Job Board - Grid View](<img width="1273" height="663" alt="job-scout-1" src="https://github.com/user-attachments/assets/3dc9fddd-9b70-4de2-8cd2-1a22b152268e" />)
