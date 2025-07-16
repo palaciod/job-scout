@@ -378,6 +378,5 @@ This project is licensed under the ISC License.
 
 ## Screenshots
 <img width="1273" height="663" alt="job-scout-1" src="https://github.com/user-attachments/assets/3dc9fddd-9b70-4de2-8cd2-1a22b152268e" />
-<img width="437" height="111" alt="job-post2" src="https://github.com/user-attachments/assets/426e23df-ae14-4bfc-81fa-6249d602a901" />
 <img width="949" height="458" alt="job-scout-3" src="https://github.com/user-attachments/assets/c31735f5-70ef-4e53-bfca-8b599580609a" />
 <img width="1210" height="586" alt="job-scout-4" src="https://github.com/user-attachments/assets/c3c0c10e-189b-46aa-a5b0-03be8d942b15" />
