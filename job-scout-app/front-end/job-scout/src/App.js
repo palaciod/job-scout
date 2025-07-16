@@ -8,6 +8,7 @@ import ContextWrapper from "./contexts/ContextWrapper";
 import UploadPage from "./components/pages/UploadPage/UploadPage";
 import BlockedCompanies from "./components/pages/BlockedCompanies/BlockedCompanies";
 import { useResume } from "./contexts/ResumeContext";
+import UnderConstructionPage from "./components/pages/UnderConstruction/UnderConstruction";
 
 const ProtectedRoute = ({ children }) => {
   const { resumeText, loading } = useResume();
@@ -50,6 +51,30 @@ const App = () => {
           element={
             <Layout>
               <UploadPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/applied"
+          element={
+            <Layout>
+              <UnderConstructionPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/delete-all"
+          element={
+            <Layout>
+              <UnderConstructionPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Layout>
+              <UnderConstructionPage />
             </Layout>
           }
         />

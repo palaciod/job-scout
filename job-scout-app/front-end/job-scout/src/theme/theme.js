@@ -7,7 +7,7 @@ export const getTheme = (mode = 'light') =>
       ...(mode === 'light'
         ? {
             primary: {
-              main: '#ff9800', // No idea if I want green or orange
+              main: '#ff9800', // No idea if I want green or
             },
             background: {
               default: '#f5f5f5',

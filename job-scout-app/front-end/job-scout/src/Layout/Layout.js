@@ -23,7 +23,7 @@ import { useProfile } from "../contexts/ProfileContext";
 
 const drawerItems1 = [
   { text: "Home", icon: <HomeIcon />, route: "/" },
-  { text: "Applied", icon: <ArticleIcon />, route: "/" },
+  { text: "Applied", icon: <ArticleIcon />, route: "/applied" },
   { text: "Upload Resume", icon: <UploadFileIcon />, route: "/upload-resume" },
   {
     text: "Blocked Companies",
@@ -35,8 +35,8 @@ const drawerItems1 = [
 
 const drawerItems2 = [
   { text: "Light/Dark", icon: <DarkModeIcon />, route: "/" },
-  { text: "Delete All", icon: <DeleteSweepIcon />, route: "/" },
-  { text: "Settings", icon: <SettingsIcon />, route: "/" },
+  { text: "Delete All", icon: <DeleteSweepIcon />, route: "/delete-all" },
+  { text: "Settings", icon: <SettingsIcon />, route: "/settings" },
 ];
 
 const Layout = ({ children }) => {
