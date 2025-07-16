@@ -50,8 +50,8 @@ echo Installation Complete!
 echo ======================================
 echo.
 echo You can now run the application using:
-echo   start.bat (Windows)
-echo   ./start.sh (Linux/Mac)
+echo   start.bat
+echo   or: npm start
 echo.
 echo Press any key to continue...
 pause >nul

@@ -1,5 +1,7 @@
 # Job Scout 🕵️‍♂️
 
+> **⚠️ Windows Only**: This project currently supports Windows only due to native C++ automation tools. Cross-platform support is planned for future releases.
+
 An intelligent automated job discovery and evaluation system for LinkedIn. Job Scout automatically scans through job postings, filters promising opportunities, and uses AI to evaluate how well they match your profile - saving you hours of manual job searching.
 
 ## 🎯 What It Does
@@ -30,14 +32,17 @@ The system consists of four main components:
 - Orchestrates screenshot capture, computer vision, and job evaluation
 - Handles LinkedIn page navigation and data extraction
 
-### 3. Mouse Tools (`mouse-tools/`)
-- Collection of C++ utilities for browser automation:
-  - **Screenshot capture** - Captures specific screen regions
-  - **Mouse movement** - Smooth cursor automation with safety controls
+### 3. Mouse Tools (`mouse-tools/`) 🖱️ **Windows Only**
+- Collection of **native C++ utilities** for precise browser automation:
+  - **Screenshot capture** - Captures specific screen regions with pixel-perfect accuracy
+  - **Mouse movement** - Smooth, human-like cursor automation with safety controls
   - **Text highlighting** - Automatic text selection and copying
-  - **OCR detection** - Finds text in images using Tesseract
-  - **Template matching** - Computer vision to locate UI elements
+  - **OCR detection** - Finds text in images using Tesseract OCR
+  - **Template matching** - Computer vision to locate UI elements (OpenCV)
   - **Scrolling** - Programmatic page navigation
+  - **Global hotkeys** - Emergency stop functionality (ESC key)
+- **Dependencies**: OpenCV, Tesseract OCR, Windows API, MSYS2/MinGW-w64
+- **Performance**: Native C++ for millisecond-precise timing and smooth automation
 
 ### 4. Job Evaluation Server (`job-scout-app/server/`)
 - Express.js API server for job analysis
@@ -47,6 +52,20 @@ The system consists of four main components:
 
 ## 🚀 Quick Start
 
+### System Requirements
+
+- **Operating System**: Windows 10/11 (64-bit)
+- **Node.js**: v16 or higher
+- **MSYS2**: Required for C++ compilation (includes MinGW-w64)
+- **Memory**: 4GB RAM minimum (8GB recommended for LLM)
+- **Storage**: 2GB free space (more for language models)
+
+### Dependencies (Auto-installed)
+- **OpenCV 4.x** - Computer vision and image processing
+- **Tesseract OCR** - Text recognition from screenshots  
+- **libpng** - Image format support
+- **Windows UI Automation** - Native Windows automation APIs
+
 ### Super Simple Setup
 
 1. **Clone the repository**
@@ -55,20 +74,25 @@ The system consists of four main components:
    cd job-scout
    ```
 
-2. **Start everything with one command**
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start everything**
    ```bash
    npm start
    ```
 
-3. **Setup LM Studio**
+4. **Setup LM Studio**
    - Install [LM Studio](https://lmstudio.ai/)
    - Download a model (recommended: Llama3-8b)
    - Start the local server on `http://127.0.0.1:1234`
 
 That's it! The script will:
-- ✅ Install all dependencies automatically
-- ✅ Start the backend server  
-- ✅ Start the React frontend
+- ✅ Install all dependencies automatically (step 2)
+- ✅ Start the backend server (step 3)
+- ✅ Start the React frontend (step 3)
 - ✅ Open the web interface at `http://localhost:3001`
 
 ### Alternative Commands
@@ -90,10 +114,7 @@ If you prefer the original batch/shell scripts:
 install.bat
 start.bat
 
-# Linux/Mac
-chmod +x install.sh start.sh
-./install.sh
-./start.sh
+# They are placeholders for future cross-platform support
 ```
 
 ### Manual Setup
@@ -104,10 +125,11 @@ If you prefer to set up components manually:
 
 ### Prerequisites
 
+- **Windows 10/11** (64-bit)
 - **Node.js** (v16+)
-- **MSYS2** with development tools
+- **MSYS2** with development tools ([Download here](https://www.msys2.org/))
 - **LM Studio** with a language model (e.g., Llama3-8b)
-- **Dependencies**: OpenCV, Tesseract OCR, libpng
+- **Dependencies**: OpenCV, Tesseract OCR, libpng (auto-installed via MSYS2)
 
 ### Installation
 
@@ -132,12 +154,17 @@ If you prefer to set up components manually:
    npm install
    ```
 
-3. **Setup MSYS2 and C++ dependencies**
+3. **Setup MSYS2 and C++ dependencies (Windows)**
    ```bash
-   # Install OpenCV, Tesseract, and other dependencies via MSYS2
+   # Install MSYS2 from https://www.msys2.org/
+   # Then install required packages:
+   pacman -S mingw-w64-ucrt-x86_64-gcc
    pacman -S mingw-w64-ucrt-x86_64-opencv
    pacman -S mingw-w64-ucrt-x86_64-tesseract-ocr
    pacman -S mingw-w64-ucrt-x86_64-libpng
+   
+   # Add MSYS2 to your PATH:
+   # C:\msys64\ucrt64\bin
    ```
 
 4. **Setup LM Studio**
@@ -145,10 +172,11 @@ If you prefer to set up components manually:
    - Download a model (recommended: Llama3-8b)
    - Start the local server on `http://127.0.0.1:1234`
 
-5. **Build mouse tools**
+5. **Build mouse tools (Windows)**
    ```bash
    cd mouse-tools
-   # Tools will auto-build when first run
+   # C++ tools will auto-build when first run by the bot
+   # Or manually build with: .\buildMoveMouse.bat, .\buildVisualizer.bat, etc.
    ```
 
 ## 🎮 Usage
@@ -299,13 +327,29 @@ Each processed job is also saved to `job-descriptions/parsed-jobs.json` with:
 
 ## ⚠️ Important Notes
 
+- **Windows Only**: Currently supports Windows 10/11 only due to native C++ automation tools
+- **Cross-Platform Plans**: Linux and macOS support planned for future releases
 - **Work in Progress**: This project is actively under development
 - **Frontend Available**: A modern React web interface is now available for job management
-- **Resolution Dependency**: Screenshot-based UI element detection is not resolution agnostic - the system may need adjustments for different screen resolutions and display scaling
+- **Resolution Dependency**: Screenshot-based UI element detection may need adjustments for different screen resolutions and display scaling
 - **LinkedIn ToS**: Be aware of LinkedIn's terms of service regarding automation
 - **Rate Limiting**: The bot includes delays to avoid overwhelming LinkedIn's servers  
 - **Manual Review**: Always manually review AI-recommended jobs before applying
 - **Local Processing**: All job data processing happens locally for privacy
+
+## 🔮 Future Plans
+
+### Cross-Platform Support
+- **Python Alternative**: Python-based automation tools for Linux/macOS
+- **Node.js Port**: Cross-platform automation using robotjs
+- **Platform Detection**: Automatic tool selection based on operating system
+- **Docker Support**: Containerized deployment options
+
+### Enhanced Features
+- **Mobile App**: React Native companion app
+- **Browser Extension**: Direct LinkedIn integration
+- **Cloud Sync**: Optional cloud storage for job data
+- **Team Features**: Collaborative job searching and sharing
 
 ## 🤝 Contributing
 
@@ -330,4 +374,4 @@ This project is licensed under the ISC License.
 
 **Disclaimer**: This tool is for educational and personal use. Always respect website terms of service and use responsibly.
 
-**Current Status**: This project is actively developed with a functional React web interface. UI elements detection may require calibration for your specific screen resolution and display scaling.
+**Current Status**: This project is actively developed with a functional React web interface. Currently Windows-only due to native C++ automation tools. Cross-platform support is planned for future releases.
