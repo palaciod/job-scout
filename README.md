@@ -1,5 +1,17 @@
 # Job Scout 🕵️‍♂️
 
+![Job Board - Grid View](job-scout-1.png)
+*View and manage AI-scanned job listings on the Job Board*
+
+![Blocked Companies Page](job-scout-2.png)
+*Easily block companies from showing up in your results*
+
+![Trash System View](job-scout-3.png)
+*Soft-delete unwanted jobs and restore if needed*
+
+![Resume Upload View](job-scout-4.png)
+*Upload your resume and view extracted text to power personalized job matches*
+
 > **⚠️ Windows Only**: This project currently supports Windows only due to native C++ automation tools. Cross-platform support is planned for future releases.
 
 An intelligent automated job discovery and evaluation system for LinkedIn. Job Scout automatically scans through job postings, filters promising opportunities, and uses AI to evaluate how well they match your profile - saving you hours of manual job searching.
