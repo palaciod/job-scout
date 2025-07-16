@@ -10,18 +10,27 @@ Job Scout **does not apply to jobs automatically**. Instead, it:
 - 🎯 **Smart Filtering**: Applies initial criteria (fewer than 100 applicants, avoids low-quality job boards)
 - 📋 **Data Extraction**: Captures full job descriptions for promising opportunities
 - 🤖 **AI Evaluation**: Uses local LLM to assess job fit based on your profile
-- 📊 **Structured Results**: Saves all evaluations in organized format for easy review
+- �️ **Web Interface**: Modern React application for managing and reviewing discovered jobs
+- �📊 **Structured Results**: Saves all evaluations in organized format for easy review
 
 ## 🏗️ Architecture
 
-The system consists of three main components:
+The system consists of four main components:
 
-### 1. Scout Bot (`scout-bot/`)
+### 1. Web Application (`job-scout-app/front-end/`)
+- **Modern React Interface**: Built with React 19 and Material-UI
+- **Job Management**: View, filter, and organize discovered jobs
+- **Resume Integration**: Upload resume for personalized job matching
+- **Company Filtering**: Block unwanted companies and job boards
+- **Theme Support**: Dark/light mode toggle
+- **Responsive Design**: Grid and list view options
+
+### 2. Scout Bot (`scout-bot/`)
 - Node.js automation script that controls the entire workflow
 - Orchestrates screenshot capture, computer vision, and job evaluation
 - Handles LinkedIn page navigation and data extraction
 
-### 2. Mouse Tools (`mouse-tools/`)
+### 3. Mouse Tools (`mouse-tools/`)
 - Collection of C++ utilities for browser automation:
   - **Screenshot capture** - Captures specific screen regions
   - **Mouse movement** - Smooth cursor automation with safety controls
@@ -30,10 +39,11 @@ The system consists of three main components:
   - **Template matching** - Computer vision to locate UI elements
   - **Scrolling** - Programmatic page navigation
 
-### 3. Job Evaluation Server (`job-scout-app/server/`)
+### 4. Job Evaluation Server (`job-scout-app/server/`)
 - Express.js API server for job analysis
 - Integrates with local LLM (LM Studio) for intelligent evaluation
 - Provides structured job data extraction and fit assessment
+- Serves data to the React frontend application
 
 ## 🚀 Setup
 
@@ -60,6 +70,10 @@ The system consists of three main components:
    
    # Job evaluation server
    cd ../job-scout-app/server
+   npm install
+   
+   # React frontend
+   cd ../front-end/job-scout
    npm install
    ```
 
@@ -90,20 +104,46 @@ cd job-scout-app/server
 npm run dev
 ```
 
-### 2. Setup LinkedIn Job Search
+### 2. Start the React Frontend (Optional)
+```bash
+cd job-scout-app/front-end/job-scout
+npm start
+```
+The web interface will be available at `http://localhost:3000`
+
+### 3. Setup LinkedIn Job Search
 - Open LinkedIn in your browser
 - Navigate to your desired job search results page
 - Position the window where the bot can capture it
 
-### 3. Run the Scout Bot
+### 4. Run the Scout Bot
 ```bash
 cd scout-bot
 npm run dev
 ```
 
-### 4. Safety Controls
+### 5. Safety Controls
 - **Press ESC** at any time to stop the bot immediately
 - The bot includes built-in escape detection for safe operation
+
+## 🖥️ Web Interface Features
+
+### Job Management
+- **Job Board**: View all discovered jobs in grid or list format
+- **Search & Filter**: Find specific jobs by title, company, or technology
+- **Trash System**: Soft delete jobs with restore functionality
+- **Company Blocking**: Maintain a blocklist of unwanted companies
+
+### User Experience
+- **Resume Upload**: Required before accessing job data for personalized matching
+- **Responsive Design**: Works on desktop and mobile devices
+- **Dark/Light Theme**: Toggle between themes for comfortable viewing
+- **Navigation**: Clean sidebar navigation with organized sections
+
+### Data Organization
+- **Applied Jobs**: Track jobs you've applied to (coming soon)
+- **Settings**: Customize filtering preferences (coming soon)
+- **Export Options**: Export job data for external analysis (coming soon)
 
 ## ⚙️ Configuration
 
@@ -118,7 +158,7 @@ The bot applies several filters to focus on quality opportunities:
 
 ### Profile Configuration
 
-Currently optimized for a **full-stack developer with 4 years experience** in:
+Currently optimized for a **full-stack developer with 5+ years experience** in:
 - JavaScript, Python, Node.js, AWS
 
 To customize for your profile, edit the `systemPrompt` in:
@@ -126,9 +166,16 @@ To customize for your profile, edit the `systemPrompt` in:
 
 ## 📊 Output
 
+### Web Interface
+Jobs are displayed in the React application with:
+- **Card/List Views**: Choose your preferred layout
+- **Filtering**: Search by company, title, technologies
+- **Status Tracking**: Applied, saved, or trashed jobs
+- **AI Insights**: LLM evaluation results and fit reasoning
+
 ### Job Evaluation Data
 
-Each processed job is saved to `job-descriptions/parsed-jobs.json` with:
+Each processed job is also saved to `job-descriptions/parsed-jobs.json` with:
 
 ```json
 {
@@ -170,15 +217,17 @@ Each processed job is saved to `job-descriptions/parsed-jobs.json` with:
 
 ## 🎯 Use Cases
 
+- **Professional Job Management**: Modern web interface for organizing job searches
 - **Job Market Research**: Analyze trends in job requirements and compensation
 - **Opportunity Discovery**: Find jobs you might have missed in manual searches
 - **Fit Assessment**: Get AI-powered evaluation of job compatibility
 - **Time Saving**: Process hundreds of jobs in the time it takes to manually review dozens
+- **Portfolio Tracking**: Maintain organized records of job applications and responses
 
 ## ⚠️ Important Notes
 
 - **Work in Progress**: This project is actively under development
-- **UI Under Construction**: A user interface is currently being built for easier interaction
+- **Frontend Available**: A modern React web interface is now available for job management
 - **Resolution Dependency**: Screenshot-based UI element detection is not resolution agnostic - the system may need adjustments for different screen resolutions and display scaling
 - **LinkedIn ToS**: Be aware of LinkedIn's terms of service regarding automation
 - **Rate Limiting**: The bot includes delays to avoid overwhelming LinkedIn's servers  
@@ -208,4 +257,4 @@ This project is licensed under the ISC License.
 
 **Disclaimer**: This tool is for educational and personal use. Always respect website terms of service and use responsibly.
 
-**Current Status**: This project is a work in progress. UI elements detection may require calibration for your specific screen resolution and display scaling. A user interface is under construction to make the system more user-friendly.
+**Current Status**: This project is actively developed with a functional React web interface. UI elements detection may require calibration for your specific screen resolution and display scaling.
