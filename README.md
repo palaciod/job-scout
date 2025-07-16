@@ -1,19 +1,4 @@
 # Job Scout 🕵️‍♂️
-<img width="1273" height="663" alt="job-scout-1" src="https://github.com/user-attachments/assets/67901344-532d-4a3f-a544-d60f04bf4325" />
-
-
-![Job Board - Grid View](<img width="1273" height="663" alt="job-scout-1" src="https://github.com/user-attachments/assets/3dc9fddd-9b70-4de2-8cd2-1a22b152268e" />)
-*View and manage AI-scanned job listings on the Job Board*
-
-![Blocked Companies Page](<img width="437" height="111" alt="job-post2" src="https://github.com/user-attachments/assets/426e23df-ae14-4bfc-81fa-6249d602a901" />)
-
-*Easily block companies from showing up in your results*
-
-![Trash System View](<img width="949" height="458" alt="job-scout-3" src="https://github.com/user-attachments/assets/c31735f5-70ef-4e53-bfca-8b599580609a" />)
-*Soft-delete unwanted jobs and restore if needed*
-
-![Resume Upload View](<img width="1210" height="586" alt="job-scout-4" src="https://github.com/user-attachments/assets/c3c0c10e-189b-46aa-a5b0-03be8d942b15" />)
-*Upload your resume and view extracted text to power personalized job matches*
 
 > **⚠️ Windows Only**: This project currently supports Windows only due to native C++ automation tools. Cross-platform support is planned for future releases.
 
@@ -390,3 +375,9 @@ This project is licensed under the ISC License.
 **Disclaimer**: This tool is for educational and personal use. Always respect website terms of service and use responsibly.
 
 **Current Status**: This project is actively developed with a functional React web interface. Currently Windows-only due to native C++ automation tools. Cross-platform support is planned for future releases.
+
+## Screenshots
+<img width="1273" height="663" alt="job-scout-1" src="https://github.com/user-attachments/assets/3dc9fddd-9b70-4de2-8cd2-1a22b152268e" />
+<img width="437" height="111" alt="job-post2" src="https://github.com/user-attachments/assets/426e23df-ae14-4bfc-81fa-6249d602a901" />
+<img width="949" height="458" alt="job-scout-3" src="https://github.com/user-attachments/assets/c31735f5-70ef-4e53-bfca-8b599580609a" />
+<img width="1210" height="586" alt="job-scout-4" src="https://github.com/user-attachments/assets/c3c0c10e-189b-46aa-a5b0-03be8d942b15" />
