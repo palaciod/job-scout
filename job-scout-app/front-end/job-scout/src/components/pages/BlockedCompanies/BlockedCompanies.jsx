@@ -2,9 +2,21 @@ import React from "react";
 import { Container, Typography, Box } from "@mui/material";
 import BlockedList from "../../organisms/BlockedList/BlockedList";
 import DrawerButton from "../../atoms/DrawerButton";
+import { useBlockedCompanies } from "../../../contexts/BlockedCompaniesContext";
 import styles from "./BlockedCompanies.module.css";
 
 const BlockedCompanies = () => {
+  const { companies, addCompany, removeCompany } = useBlockedCompanies();
+
+  const onAdd = (company) => {
+    addCompany(company);
+  }
+
+  const onRemove = (company) => {
+    removeCompany(company)
+  }
+
+  
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
       <div className={styles?.drawerButton}>
@@ -19,7 +31,7 @@ const BlockedCompanies = () => {
         </Typography>
       </Box>
 
-      <BlockedList />
+      <BlockedList companies={companies} onAdd={onAdd} onRemove={onRemove}/>
     </Container>
   );
 };

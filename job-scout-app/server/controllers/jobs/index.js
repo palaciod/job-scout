@@ -181,5 +181,174 @@ router.post("/jobs/update-applied", async (req, res) => {
 });
 
 
+router.delete("/remove", (req, res) => {
+  const { url } = req.body;
+
+  if (typeof url !== "string") {
+    return res.status(400).json({ error: "Missing or invalid 'url' field." });
+  }
+
+  const jobsFile = path.resolve("job-descriptions", "parsed-jobs.json");
+  const trashFile = path.resolve("job-descriptions", "trashed-jobs.json");
+
+  if (!fs.existsSync(jobsFile)) {
+    return res.status(404).json({ error: "Jobs file not found." });
+  }
+
+  try {
+    const jobsContent = fs.readFileSync(jobsFile, "utf8");
+    const jobs = JSON.parse(jobsContent || "[]");
+
+    const remainingJobs = [];
+    let removedJob = null;
+
+    for (const jobEntry of jobs) {
+      if (jobEntry.url === url && !removedJob) {
+        removedJob = jobEntry;
+      } else {
+        remainingJobs.push(jobEntry);
+      }
+    }
+
+    if (!removedJob) {
+      return res.status(404).json({ error: "Job with given URL not found." });
+    }
+    fs.writeFileSync(jobsFile, JSON.stringify(remainingJobs, null, 2), "utf8");
+    console.log(`🗑️ Removed job with URL: ${url}`);
+
+    if (!fs.existsSync(path.dirname(trashFile))) {
+      fs.mkdirSync(path.dirname(trashFile), { recursive: true });
+    }
+
+    let trashedJobs = [];
+    if (fs.existsSync(trashFile)) {
+      try {
+        const trashContent = fs.readFileSync(trashFile, "utf8");
+        trashedJobs = JSON.parse(trashContent || "[]");
+      } catch (e) {
+        console.warn("⚠️ Could not parse trashed-jobs.json:", e);
+      }
+    }
+
+    removedJob.trashedAt = new Date().toISOString();
+    trashedJobs.push(removedJob);
+    fs.writeFileSync(trashFile, JSON.stringify(trashedJobs, null, 2), "utf8");
+    console.log("📦 Moved job to trashed-jobs.json");
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Failed to delete and trash job:", err);
+    return res.status(500).json({ error: "Failed to delete job." });
+  }
+});
+
+// probably should create its own controller for this trash jobs
+
+router.get("/get-trash-jobs", (req, res) => {
+  const trashFile = path.resolve("job-descriptions", "trashed-jobs.json");
+
+  if (!fs.existsSync(trashFile)) {
+    return res.status(404).json({ message: "No trashed jobs found." });
+  }
+
+  try {
+    const content = fs.readFileSync(trashFile, "utf8");
+    const trashedJobs = JSON.parse(content || "[]");
+
+    if (!Array.isArray(trashedJobs) || trashedJobs.length === 0) {
+      return res.status(404).json({ message: "No trashed jobs found." });
+    }
+
+    return res.json({ jobs: trashedJobs });
+  } catch (err) {
+    console.error("❌ Failed to read trashed-jobs.json:", err);
+    return res.status(500).json({ error: "Failed to read trashed jobs file." });
+  }
+});
+
+router.delete("/delete-trashed-job", (req, res) => {
+  const { url } = req.body;
+
+  if (typeof url !== "string") {
+    return res.status(400).json({ error: "Missing or invalid 'url' field." });
+  }
+
+  const trashFile = path.resolve("job-descriptions", "trashed-jobs.json");
+
+  if (!fs.existsSync(trashFile)) {
+    return res.status(404).json({ error: "Trash file not found." });
+  }
+
+  try {
+    const content = fs.readFileSync(trashFile, "utf8");
+    let trashedJobs = JSON.parse(content || "[]");
+
+    const initialLength = trashedJobs.length;
+    trashedJobs = trashedJobs.filter((entry) => entry.url !== url);
+
+    if (trashedJobs.length === initialLength) {
+      return res.status(404).json({ error: "Trashed job with given URL not found." });
+    }
+
+    fs.writeFileSync(trashFile, JSON.stringify(trashedJobs, null, 2), "utf8");
+    console.log(`🗑️ Permanently deleted trashed job with URL: ${url}`);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Failed to delete trashed job:", err);
+    return res.status(500).json({ error: "Failed to delete trashed job." });
+  }
+});
+
+router.post("/restore-trashed-job", (req, res) => {
+  const { url } = req.body;
+
+  if (typeof url !== "string") {
+    return res.status(400).json({ error: "Missing or invalid 'url' field." });
+  }
+
+  const jobsFile = path.resolve("job-descriptions", "parsed-jobs.json");
+  const trashFile = path.resolve("job-descriptions", "trashed-jobs.json");
+
+  if (!fs.existsSync(trashFile)) {
+    return res.status(404).json({ error: "Trash file not found." });
+  }
+
+  try {
+    const trashContent = fs.readFileSync(trashFile, "utf8");
+    let trashedJobs = JSON.parse(trashContent || "[]");
+
+    const index = trashedJobs.findIndex((entry) => entry.url === url);
+    if (index === -1) {
+      return res.status(404).json({ error: "Trashed job with given URL not found." });
+    }
+
+    const restoredJob = trashedJobs.splice(index, 1)[0];
+
+    delete restoredJob.trashedAt;
+
+    let existingJobs = [];
+    if (fs.existsSync(jobsFile)) {
+      const jobContent = fs.readFileSync(jobsFile, "utf8");
+      existingJobs = JSON.parse(jobContent || "[]");
+    }
+
+    existingJobs.push({
+      timestamp: new Date().toISOString(),
+      url: restoredJob.url,
+      job: restoredJob.job,
+    });
+    fs.writeFileSync(jobsFile, JSON.stringify(existingJobs, null, 2), "utf8");
+    fs.writeFileSync(trashFile, JSON.stringify(trashedJobs, null, 2), "utf8");
+
+    console.log(`♻️ Restored job with URL: ${url} back to parsed-jobs.json`);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Failed to restore job:", err);
+    return res.status(500).json({ error: "Failed to restore trashed job." });
+  }
+});
+
 
 export default router;

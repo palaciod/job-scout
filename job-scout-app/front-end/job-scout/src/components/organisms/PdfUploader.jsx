@@ -10,10 +10,11 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useResume } from "../../contexts/ResumeContext";
+import ResumeTextViewer from "../molecules/label/ResumeTextViewer";
 
 const PdfUploader = ({ onFileSelect }) => {
   const [pdfFile, setPdfFile] = useState(null);
-  const { updateResumeText } = useResume();
+  const { resumeText, updateResumeText } = useResume();
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -93,6 +94,7 @@ const PdfUploader = ({ onFileSelect }) => {
           </Stack>
         )}
       </Box>
+       <ResumeTextViewer text={resumeText ?? ""} />;
     </Paper>
   );
 };

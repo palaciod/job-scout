@@ -1,20 +1,19 @@
 import React, { useState } from "react";
 import { Box, TextField, Button, Stack } from "@mui/material";
 import CompanyCard from "../../molecules/card/CompanyCard";
-const BlockedList = () => {
-  const [tags, setTags] = useState(["React", "Node.js", "AWS", "TypeScript"]);
+const BlockedList = ({ companies, onAdd, onRemove }) => {
   const [input, setInput] = useState("");
 
   const handleAdd = () => {
     const trimmed = input.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags([...tags, trimmed]);
+    if (trimmed && !companies.includes(trimmed)) {
+      onAdd(trimmed)
       setInput("");
     }
   };
 
   const handleRemove = (tagToRemove) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
+    onRemove(tagToRemove)
   };
 
   return (
@@ -40,8 +39,12 @@ const BlockedList = () => {
       </Box>
 
       <Stack spacing={1}>
-        {tags.map((tag) => (
-          <CompanyCard key={tag} name={tag} onRemove={() => handleRemove(tag)} />
+        {companies?.map((tag) => (
+          <CompanyCard
+            key={tag}
+            name={tag}
+            onRemove={() => handleRemove(tag)}
+          />
         ))}
       </Stack>
     </Box>

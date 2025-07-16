@@ -5,6 +5,7 @@ import { DrawerProvider } from "./DrawerContext";
 import { JobDataProvider } from "./JobDataContext";
 import { ResumeProvider } from "./ResumeContext";
 import { ProfileProvider, useProfile } from "./ProfileContext";
+import { BlockedCompaniesProvider } from "./BlockedCompaniesContext";
 
 const AppWithTheme = ({ children }) => {
   const { theme } = useProfile();
@@ -22,9 +23,11 @@ const ContextWrapper = ({ children }) => {
     <ProfileProvider>
       <AppWithTheme>
         <DrawerProvider>
-          <ResumeProvider>
-            <JobDataProvider>{children}</JobDataProvider>
-          </ResumeProvider>
+          <BlockedCompaniesProvider>
+            <ResumeProvider>
+              <JobDataProvider>{children}</JobDataProvider>
+            </ResumeProvider>
+          </BlockedCompaniesProvider>
         </DrawerProvider>
       </AppWithTheme>
     </ProfileProvider>

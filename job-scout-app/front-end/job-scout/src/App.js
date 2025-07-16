@@ -64,6 +64,16 @@ const App = () => {
           }
         />
         <Route
+          path="/trash"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <JobBoard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/job/:id"
           element={
             <ProtectedRoute>

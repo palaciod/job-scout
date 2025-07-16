@@ -30,7 +30,7 @@ const drawerItems1 = [
     icon: <BlockIcon />,
     route: "/blocked-companies",
   },
-  { text: "Trash", icon: <DeleteIcon />, route: "/" },
+  { text: "Trash", icon: <DeleteIcon />, route: "/trash" },
 ];
 
 const drawerItems2 = [
