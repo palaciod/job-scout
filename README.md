@@ -45,6 +45,61 @@ The system consists of four main components:
 - Provides structured job data extraction and fit assessment
 - Serves data to the React frontend application
 
+## 🚀 Quick Start
+
+### Super Simple Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd job-scout
+   ```
+
+2. **Start everything with one command**
+   ```bash
+   npm start
+   ```
+
+3. **Setup LM Studio**
+   - Install [LM Studio](https://lmstudio.ai/)
+   - Download a model (recommended: Llama3-8b)
+   - Start the local server on `http://127.0.0.1:1234`
+
+That's it! The script will:
+- ✅ Install all dependencies automatically
+- ✅ Start the backend server  
+- ✅ Start the React frontend
+- ✅ Open the web interface at `http://localhost:3001`
+
+### Alternative Commands
+
+```bash
+# Install dependencies only
+npm run install-deps
+
+# Development mode (more verbose output)
+npm run dev
+```
+
+### Legacy Scripts (Alternative)
+
+If you prefer the original batch/shell scripts:
+
+```bash
+# Windows
+install.bat
+start.bat
+
+# Linux/Mac
+chmod +x install.sh start.sh
+./install.sh
+./start.sh
+```
+
+### Manual Setup
+
+If you prefer to set up components manually:
+
 ## 🚀 Setup
 
 ### Prerequisites
@@ -98,6 +153,23 @@ The system consists of four main components:
 
 ## 🎮 Usage
 
+### Super Quick Start
+After cloning the repo:
+
+```bash
+npm start
+```
+
+Then:
+1. **Access the web interface** at `http://localhost:3001`
+2. **Upload your resume** (required for personalized job matching)
+3. **Optional: Run the automation bot**
+   - Open LinkedIn job search in your browser
+   - Run: `cd scout-bot && npm run dev`
+   - Press ESC to stop the bot anytime
+
+### Alternative Usage
+
 ### 1. Start the Job Evaluation Server
 ```bash
 cd job-scout-app/server
@@ -125,6 +197,7 @@ npm run dev
 ### 5. Safety Controls
 - **Press ESC** at any time to stop the bot immediately
 - The bot includes built-in escape detection for safe operation
+- Use `stop.bat` (Windows) to stop all Job Scout processes
 
 ## 🖥️ Web Interface Features
 
