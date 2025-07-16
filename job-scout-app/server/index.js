@@ -6,6 +6,7 @@ import Jobs from "./controllers/jobs/index.js";
 import Resume from "./controllers/resume/index.js";
 import Profile from "./controllers/profile/index.js";
 import BlockedList from "./controllers/blocked-companies/index.js";
+import Bot from "./controllers/bot/index.js";
 
 
 const port = 3000;
@@ -18,6 +19,7 @@ app.use('/jobs', Jobs);
 app.use('/resume', Resume);
 app.use('/profile', Profile);
 app.use('/blocked', BlockedList);
+app.use('/bot', Bot);
 
 
 app.get('/', (req, res) => {
